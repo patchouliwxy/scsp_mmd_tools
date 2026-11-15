@@ -1,0 +1,37 @@
+__pycache__/
+*.pyc
+*.blend
+*.blend1
+Outputs/
+
+# Build, release, local settings & archives
+.builddeps/
+Build/
+Releases/
+*.spec
+*.rar
+studio_settings.json
+PromoVideo/
+
+# Local development notes, experiments & deprecated diagnostic helpers (excluded from public tree)
+HANDOFF.md
+WORKFLOW.md
+PIPELINE.md
+PE_WORKFLOW.md
+PHYSICS_HANDOFF.md
+WEIGHT_TRANSFERS.md
+pipeline_steps.json
+run_preprocess.py
+run_pe_workflow.py
+Evidence/
+Resources/pe_workflow.json
+Tools/PE/
+Tools/better_fbx_headless.py
+Tools/check_*.py
+Tools/diagnose_*.py
+Tools/finish_export_ready.py
+Tools/finish_face_cleanup.py
+Tools/finish_merge_shapes.py
+Tools/inspect_*.py
+Tools/render_*.py
+Tools/try_twist_merge.py

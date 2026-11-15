@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "provenance": "Frozen source-ID character master height/head/bust; explicit arm=.95 hand=.90 recipe, not native game formula",
+  "importer": "ufbx",
+  "eye_rotation_pivots": true,
+  "restore_inbetween_shapes": false,
+  "render_preview": false,
+  "workflow_stop": "export_ready",
+  "modules": [
+    "import_fbx",
+    "eye_processing",
+    "skeleton_processing",
+    "body_proportions",
+    "face_processing",
+    "mesh_processing",
+    "shape_processing",
+    "export_preparation"
+  ],
+  "face_processing": {
+    "enabled": true,
+    "segments": 128,
+    "radius_scale": 1.0,
+    "height_scale": 2.0
+  },
+  "eye_review_pending": true,
+  "mesh_processing": {
+    "enabled": true
+  },
+  "shape_processing": {
+    "enabled": true
+  },
+  "material_policy": {
+    "roughness": 1.0,
+    "scope": "material + Principled BSDF input",
+    "face_texture_carrier": "Hide accessory M_face four-vertex texture carrier"
+  },
+  "export_preparation": {
+    "enabled": true
+  },
+  "eye_geometry_fallback": "preserve_source"
+}

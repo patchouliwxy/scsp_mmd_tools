@@ -1,0 +1,377 @@
+{
+  "schema": 1,
+  "name_encoding": "utf-8",
+  "name_max_bytes": 50,
+  "source_identity_property": "scsp_source_bone",
+  "working_role_property": "scsp_working_role",
+  "mappings": [
+    {
+      "role": "all_parent",
+      "source_names": ["root"],
+      "japanese": "全ての親",
+      "english": "All parent"
+    },
+    {
+      "role": "lower_body",
+      "source_names": ["Hips"],
+      "japanese": "下半身",
+      "english": "Lower body"
+    },
+    {
+      "role": "upper_body",
+      "source_names": ["Spine"],
+      "japanese": "上半身",
+      "english": "Upper body"
+    },
+    {
+      "role": "upper_body_2",
+      "source_names": ["Spine1"],
+      "japanese": "上半身2",
+      "english": "Upper body 2"
+    },
+    {
+      "role": "upper_body_3",
+      "source_names": ["Spine2"],
+      "japanese": "上半身3",
+      "english": "Upper body 3"
+    },
+    {
+      "role": "neck",
+      "source_names": ["Neck"],
+      "japanese": "首",
+      "english": "Neck"
+    },
+    {
+      "role": "head",
+      "source_names": ["Head"],
+      "japanese": "頭",
+      "english": "Head"
+    },
+    {
+      "role": "left_shoulder",
+      "source_names": ["LeftShoulder"],
+      "japanese": "左肩",
+      "english": "Left shoulder"
+    },
+    {
+      "role": "right_shoulder",
+      "source_names": ["RightShoulder"],
+      "japanese": "右肩",
+      "english": "Right shoulder"
+    },
+    {
+      "role": "left_upper_arm",
+      "source_names": ["LeftArm"],
+      "japanese": "左腕",
+      "english": "Left arm"
+    },
+    {
+      "role": "right_upper_arm",
+      "source_names": ["RightArm"],
+      "japanese": "右腕",
+      "english": "Right arm"
+    },
+    {
+      "role": "left_forearm",
+      "source_names": ["LeftElbow"],
+      "working_role": "forearm_primary",
+      "japanese": "左ひじ",
+      "english": "Left elbow"
+    },
+    {
+      "role": "right_forearm",
+      "source_names": ["RightElbow"],
+      "working_role": "forearm_primary",
+      "japanese": "右ひじ",
+      "english": "Right elbow"
+    },
+    {
+      "role": "left_hand",
+      "source_names": ["LeftHand"],
+      "japanese": "左手首",
+      "english": "Left wrist"
+    },
+    {
+      "role": "right_hand",
+      "source_names": ["RightHand"],
+      "japanese": "右手首",
+      "english": "Right wrist"
+    },
+    {
+      "role": "left_upper_leg",
+      "source_names": ["LeftUpLeg"],
+      "japanese": "左足",
+      "english": "Left leg"
+    },
+    {
+      "role": "right_upper_leg",
+      "source_names": ["RightUpLeg"],
+      "japanese": "右足",
+      "english": "Right leg"
+    },
+    {
+      "role": "left_lower_leg",
+      "source_names": ["LeftLeg"],
+      "japanese": "左ひざ",
+      "english": "Left knee"
+    },
+    {
+      "role": "right_lower_leg",
+      "source_names": ["RightLeg"],
+      "japanese": "右ひざ",
+      "english": "Right knee"
+    },
+    {
+      "role": "left_foot",
+      "source_names": ["LeftFoot"],
+      "japanese": "左足首",
+      "english": "Left ankle"
+    },
+    {
+      "role": "right_foot",
+      "source_names": ["RightFoot"],
+      "japanese": "右足首",
+      "english": "Right ankle"
+    },
+    {
+      "role": "left_toe",
+      "source_names": ["LeftToe", "LeftToeBase"],
+      "japanese": "左つま先",
+      "english": "Left toe"
+    },
+    {
+      "role": "right_toe",
+      "source_names": ["RightToe", "RightToeBase"],
+      "japanese": "右つま先",
+      "english": "Right toe"
+    },
+    {
+      "role": "left_eye",
+      "source_names": ["p00__EYE_L"],
+      "source_metadata": ["EYE_L"],
+      "japanese": "左目",
+      "english": "Left eye"
+    },
+    {
+      "role": "right_eye",
+      "source_names": ["p00__EYE_R"],
+      "source_metadata": ["EYE_R"],
+      "japanese": "右目",
+      "english": "Right eye"
+    },
+    {
+      "role": "left_index_1",
+      "source_names": ["LeftHandIndex1"],
+      "japanese": "左人指１",
+      "english": "Left index 1"
+    },
+    {
+      "role": "left_index_2",
+      "source_names": ["LeftHandIndex2"],
+      "japanese": "左人指２",
+      "english": "Left index 2"
+    },
+    {
+      "role": "left_index_3",
+      "source_names": ["LeftHandIndex3"],
+      "japanese": "左人指３",
+      "english": "Left index 3"
+    },
+    {
+      "role": "right_index_1",
+      "source_names": ["RightHandIndex1"],
+      "japanese": "右人指１",
+      "english": "Right index 1"
+    },
+    {
+      "role": "right_index_2",
+      "source_names": ["RightHandIndex2"],
+      "japanese": "右人指２",
+      "english": "Right index 2"
+    },
+    {
+      "role": "right_index_3",
+      "source_names": ["RightHandIndex3"],
+      "japanese": "右人指３",
+      "english": "Right index 3"
+    },
+    {
+      "role": "left_middle_1",
+      "source_names": ["LeftHandMiddle1"],
+      "japanese": "左中指１",
+      "english": "Left middle 1"
+    },
+    {
+      "role": "left_middle_2",
+      "source_names": ["LeftHandMiddle2"],
+      "japanese": "左中指２",
+      "english": "Left middle 2"
+    },
+    {
+      "role": "left_middle_3",
+      "source_names": ["LeftHandMiddle3"],
+      "japanese": "左中指３",
+      "english": "Left middle 3"
+    },
+    {
+      "role": "right_middle_1",
+      "source_names": ["RightHandMiddle1"],
+      "japanese": "右中指１",
+      "english": "Right middle 1"
+    },
+    {
+      "role": "right_middle_2",
+      "source_names": ["RightHandMiddle2"],
+      "japanese": "右中指２",
+      "english": "Right middle 2"
+    },
+    {
+      "role": "right_middle_3",
+      "source_names": ["RightHandMiddle3"],
+      "japanese": "右中指３",
+      "english": "Right middle 3"
+    },
+    {
+      "role": "left_thumb_1",
+      "source_names": ["LeftHandThumb1"],
+      "japanese": "左親指０",
+      "english": "Left thumb 0"
+    },
+    {
+      "role": "left_thumb_2",
+      "source_names": ["LeftHandThumb2"],
+      "japanese": "左親指１",
+      "english": "Left thumb 1"
+    },
+    {
+      "role": "left_thumb_3",
+      "source_names": ["LeftHandThumb3"],
+      "japanese": "左親指２",
+      "english": "Left thumb 2"
+    },
+    {
+      "role": "right_thumb_1",
+      "source_names": ["RightHandThumb1"],
+      "japanese": "右親指０",
+      "english": "Right thumb 0"
+    },
+    {
+      "role": "right_thumb_2",
+      "source_names": ["RightHandThumb2"],
+      "japanese": "右親指１",
+      "english": "Right thumb 1"
+    },
+    {
+      "role": "right_thumb_3",
+      "source_names": ["RightHandThumb3"],
+      "japanese": "右親指２",
+      "english": "Right thumb 2"
+    },
+    {
+      "role": "left_ring_1",
+      "source_names": ["LeftHandRing1"],
+      "japanese": "左薬指１",
+      "english": "Left ring 1"
+    },
+    {
+      "role": "left_ring_2",
+      "source_names": ["LeftHandRing2"],
+      "japanese": "左薬指２",
+      "english": "Left ring 2"
+    },
+    {
+      "role": "left_ring_3",
+      "source_names": ["LeftHandRing3"],
+      "japanese": "左薬指３",
+      "english": "Left ring 3"
+    },
+    {
+      "role": "right_ring_1",
+      "source_names": ["RightHandRing1"],
+      "japanese": "右薬指１",
+      "english": "Right ring 1"
+    },
+    {
+      "role": "right_ring_2",
+      "source_names": ["RightHandRing2"],
+      "japanese": "右薬指２",
+      "english": "Right ring 2"
+    },
+    {
+      "role": "right_ring_3",
+      "source_names": ["RightHandRing3"],
+      "japanese": "右薬指３",
+      "english": "Right ring 3"
+    },
+    {
+      "role": "left_pinky_1",
+      "source_names": ["LeftHandPinky1"],
+      "japanese": "左小指１",
+      "english": "Left pinky 1"
+    },
+    {
+      "role": "left_pinky_2",
+      "source_names": ["LeftHandPinky2"],
+      "japanese": "左小指２",
+      "english": "Left pinky 2"
+    },
+    {
+      "role": "left_pinky_3",
+      "source_names": ["LeftHandPinky3"],
+      "japanese": "左小指３",
+      "english": "Left pinky 3"
+    },
+    {
+      "role": "right_pinky_1",
+      "source_names": ["RightHandPinky1"],
+      "japanese": "右小指１",
+      "english": "Right pinky 1"
+    },
+    {
+      "role": "right_pinky_2",
+      "source_names": ["RightHandPinky2"],
+      "japanese": "右小指２",
+      "english": "Right pinky 2"
+    },
+    {
+      "role": "right_pinky_3",
+      "source_names": ["RightHandPinky3"],
+      "japanese": "右小指３",
+      "english": "Right pinky 3"
+    }
+  ],
+  "not_created_controls": [
+    {
+      "name": "センター",
+      "reason": "Hips is the pelvis deformation bone and is mapped separately to 下半身."
+    },
+    {
+      "name": "グルーブ",
+      "reason": "No source bone with this control role exists."
+    },
+    {
+      "name": "腰",
+      "reason": "No source bone with this control role exists."
+    },
+    {
+      "name": "左足ＩＫ",
+      "reason": "No source IK target, pole, or chain role exists."
+    },
+    {
+      "name": "右足ＩＫ",
+      "reason": "No source IK target, pole, or chain role exists."
+    },
+    {
+      "name": "左つま先ＩＫ",
+      "reason": "No source toe IK target or chain role exists."
+    },
+    {
+      "name": "右つま先ＩＫ",
+      "reason": "No source toe IK target or chain role exists."
+    },
+    {
+      "name": "両目",
+      "reason": "Source contains only the two eye bones, without a shared eye controller."
+    }
+  ]
+}
