@@ -1,8 +1,8 @@
-# scsp_mmd_tools (v0.1.1 Preview)
+# scsp_mmd_tools (v0.1.2 Preview)
 
 **简体中文** | [English](README.en.md)
 
-当前版本：**v0.1.1 预览版（Preview）** — SCSP 角色资产到 MMD 无物理 PMX 的桌面与命令行批处理工具：输入完整角色任务文件夹，自动生成无物理 PMX 与 `textures` 贴图目录。全部制作步骤在 Blender 后台自动完成，**无需 Unity、PmxEditor 或任何第三方商业/外部 Blender 插件**。
+当前版本：**v0.1.2 预览版（Preview）** — SCSP 角色资产到 MMD 无物理 PMX 的桌面与命令行批处理工具：输入完整角色任务文件夹，自动生成无物理 PMX 与 `textures` 贴图目录。全部制作步骤在 Blender 后台自动完成，**无需 Unity、PmxEditor 或任何第三方商业/外部 Blender 插件**。
 
 请保留 `scsp_mmd_tools.exe` 与 `_internal` 在同一文件夹，分发时复制整个发布目录。
 
@@ -66,6 +66,10 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1
 产物将生成在 `Releases/scsp_mmd_tools/scsp_mmd_tools.exe`（同步保留既有 `Outputs`）。仓库已预编并提供 `Tools/ufbx_bridge.dll`，如需自行重编原生桥接库，可执行 `Tools/native/build_ufbx.ps1`（需 MinGW `gcc`）。
 
 ## 更新日志
+
+### v0.1.2 Preview (2026-11-17)
+
+- **修复部分电脑启动扫盘报错 `[WinError 87]` 的问题**：`studio_pipeline.py` 中的 `discover_default_blender()` 为 `is_dir()`、`glob()` 与 `is_file()` 增加 `OSError` 安全兜底，遇到未就绪虚拟盘、空光驱/读卡器或不可访问盘符时自动跳过而不崩溃；`studio_gui.py` 目录浏览逻辑同步补充异常捕获，`Tools/test_studio_pipeline.py` 新增对应回归测试。
 
 ### v0.1.1 Preview (2026-11-17)
 

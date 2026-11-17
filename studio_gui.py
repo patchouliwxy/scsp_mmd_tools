@@ -368,7 +368,7 @@ class StudioGui:
         self._refresh_actions()
 
     def _configure_window(self) -> None:
-        self.root.title("scsp_mmd_tools v0.1.1 (Preview)")
+        self.root.title("scsp_mmd_tools v0.1.2 (Preview)")
         try:
             dpi = float(self.root.winfo_fpixels("1i"))
         except Exception:
@@ -1177,11 +1177,11 @@ class StudioGui:
     def _initial_directory(self, raw: str) -> str:
         try:
             path = _absolute_path(raw, "目录")
-        except ValueError:
+            if path.is_file():
+                path = path.parent
+            return str(path if path.exists() else APP_DIR)
+        except (ValueError, OSError):
             return str(APP_DIR)
-        if path.is_file():
-            path = path.parent
-        return str(path if path.exists() else APP_DIR)
 
     def _choose_tasks(self, multiple: bool) -> None:
         if self._building:
@@ -1192,7 +1192,7 @@ class StudioGui:
                 "下载器任务文件夹",
             )
             initial = task_root if task_root.is_dir() else APP_DIR
-        except ValueError:
+        except (ValueError, OSError):
             initial = APP_DIR
 
         total_added = 0

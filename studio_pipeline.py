@@ -65,6 +65,27 @@ def probe_blender_executable(blender_path) -> dict[str, object]:
         return {'ok': False, 'supported': False, 'version': None, 'version_text': '', 'error': str(exc)}
 
 
+def _safe_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
+def _safe_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def _safe_glob(root: Path, pattern: str) -> list[Path]:
+    try:
+        return sorted(root.glob(pattern)) if _safe_is_dir(root) else []
+    except OSError:
+        return []
+
+
 def discover_default_blender() -> Path:
     """Return SCSP_MMD_BLENDER if set, else the newest installed compatible Blender (>= 4.1)."""
     env_value = os.environ.get('SCSP_MMD_BLENDER', '').strip()
@@ -76,13 +97,12 @@ def discover_default_blender() -> Path:
     if which_hit:
         candidates.append(Path(which_hit))
     for pattern_root, subglob in (
-        (Path('D:/'), 'blender*/blender.exe'),
         (Path('C:/'), 'blender*/blender.exe'),
+        (Path('D:/'), 'blender*/blender.exe'),
         (Path('C:/Program Files/Blender Foundation'), '*/blender.exe'),
         (Path('D:/Program Files/Blender Foundation'), '*/blender.exe'),
     ):
-        if pattern_root.is_dir():
-            candidates.extend(sorted(pattern_root.glob(subglob)))
+        candidates.extend(_safe_glob(pattern_root, subglob))
     candidates.append(Path('D:/blender-5.3.0/blender.exe'))
 
     seen: set[str] = set()
@@ -92,7 +112,7 @@ def discover_default_blender() -> Path:
             key = str(cand.resolve(strict=False)).lower()
         except Exception:
             key = str(cand).lower()
-        if key in seen or not cand.is_file():
+        if key in seen or not _safe_is_file(cand):
             continue
         seen.add(key)
         probe = probe_blender_executable(cand)

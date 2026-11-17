@@ -489,6 +489,29 @@ class CommentAndGuiTests(unittest.TestCase):
             self.assertEqual(audit['textures_missing'], [])
             self.assertEqual(audit['textures_non_relative'], [])
 
+    def test_discover_default_blender_ignores_inaccessible_drive_oserror(self) -> None:
+        import studio_pipeline
+
+        orig_is_dir = Path.is_dir
+        orig_is_file = Path.is_file
+
+        def fake_is_dir(self_path: Path) -> bool:
+            if str(self_path).upper().startswith('D:'):
+                raise OSError(22, '参数错误', str(self_path))
+            return False
+
+        def fake_is_file(self_path: Path) -> bool:
+            if str(self_path).upper().startswith('D:'):
+                raise OSError(22, '参数错误', str(self_path))
+            return False
+
+        with mock.patch.dict(studio_pipeline.os.environ, {'SCSP_MMD_BLENDER': ''}, clear=False), \
+             mock.patch.object(studio_pipeline.shutil, 'which', return_value=None), \
+             mock.patch.object(Path, 'is_dir', autospec=True, side_effect=fake_is_dir), \
+             mock.patch.object(Path, 'is_file', autospec=True, side_effect=fake_is_file):
+            res = studio_pipeline.discover_default_blender()
+            self.assertEqual(res, Path('blender'))
+
 
 if __name__=='__main__':unittest.main()
 
