@@ -249,8 +249,22 @@ def _transform_geometry(obj, transforms, geometry_before):
 def _sync_custom_normals(obj, transforms, old_normals):
     if len(old_normals) != len(obj.data.loops):
         raise AposeBakeError("Source corner-normal count mismatch: " + obj.name)
+    fallback_normals = None
     result = []
     for index, old_normal in enumerate(old_normals):
+        if old_normal.length <= EPS:
+            if fallback_normals is None:
+                fallback_normals = {}
+                for poly in obj.data.polygons:
+                    pn = poly.normal.copy()
+                    if pn.length <= EPS:
+                        pn = Vector((0.0, 0.0, 1.0))
+                    else:
+                        pn.normalize()
+                    for li in poly.loop_indices:
+                        fallback_normals[li] = pn
+            result.append(fallback_normals.get(index, Vector((0.0, 0.0, 1.0))))
+            continue
         vertex_index = obj.data.loops[index].vertex_index
         normal = transforms[vertex_index].to_3x3().inverted_safe().transposed() @ old_normal
         if normal.length <= EPS:

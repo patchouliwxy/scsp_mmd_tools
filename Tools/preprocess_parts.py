@@ -146,33 +146,75 @@ def _topology_snapshot(meshes):
     return snapshot
 
 
-def _is_face_texture_card(obj):
-    """Recognize an accessory face-texture carrier, including merged provenance."""
-    if obj.type!='MESH':
-        return False
-    names={_source_name(obj).casefold()}
-    raw=obj.get('scsp_merge_sources')
+_EYE_PARTS_CARD_NAMES = {"m_eyelash", "m_eyebrow", "m_faceline", "m_mouthline"}
+_EYE_PARTS_MAT_PREFIXES = ("m_eyelash_", "m_eyebrow_", "m_faceline_", "m_mouthline_")
+_EYE_PARTS_TARGET_PREFIXES = ("m_eyelash", "m_eyebrow", "m_faceline", "m_mouthline")
+
+
+def _accessory_card_kind(obj):
+    """Identify accessory material-override carrier cards ('face' or 'eyeparts')."""
+    if obj.type != "MESH":
+        return None
+    names = {_source_name(obj).casefold()}
+    raw = obj.get("scsp_merge_sources")
     if raw:
         try:
-            sources=json.loads(raw)
-            if len(sources)==1:names.add(str(sources[0].get('source_object','')).casefold())
-        except (TypeError,ValueError):pass
-    if 'm_face' not in names:return False
-    path=str(obj.get('scsp_source_fbx','')).replace('\\','/').lower()
-    accessory=obj.get('scsp_merged_part')=='acce' or '_acce__' in obj.name.lower() or '/m_acce_' in path
-    if not accessory:return False
+            sources = json.loads(raw)
+            if len(sources) == 1:
+                names.add(str(sources[0].get("source_object", "")).casefold())
+        except (TypeError, ValueError):
+            pass
+    path = str(obj.get("scsp_source_fbx", "")).replace("\\", "/").lower()
+    accessory = (
+        obj.get("scsp_merged_part") == "acce"
+        or "_acce__" in obj.name.lower()
+        or "/m_acce_" in path
+    )
+    if not accessory:
+        return None
+
+    wants_face = "m_face" in names
+    wants_eyeparts = bool(names & _EYE_PARTS_CARD_NAMES)
+    is_geom_dup = bool(obj.get("scsp_duplicate_head_target"))
+    if not wants_face and not wants_eyeparts and not is_geom_dup:
+        return None
+
     for material in obj.data.materials:
-        if material is None:continue
-        if material.name.lower().startswith('m_face_'):return True
+        if material is None:
+            continue
+        mat_low = material.name.lower()
+        if (wants_face or is_geom_dup) and mat_low.startswith("m_face"):
+            return "face"
+        if (wants_eyeparts or is_geom_dup) and (
+            mat_low.startswith(_EYE_PARTS_MAT_PREFIXES)
+            or (is_geom_dup and mat_low.startswith(_EYE_PARTS_TARGET_PREFIXES))
+        ):
+            return "eyeparts"
         if material.node_tree:
             for node in material.node_tree.nodes:
-                if node.type=='TEX_IMAGE' and node.image and '_face_' in node.image.name.lower():return True
-    return False
+                if node.type != "TEX_IMAGE" or not node.image:
+                    continue
+                img_low = node.image.name.lower()
+                if (wants_face or is_geom_dup) and "_face_" in img_low:
+                    return "face"
+                if (wants_eyeparts or is_geom_dup) and "_eyeparts_" in img_low:
+                    return "eyeparts"
+    return None
+
+
+def _is_face_texture_card(obj):
+    """Recognize an accessory face-texture carrier, including merged provenance."""
+    return _accessory_card_kind(obj) == "face"
 
 
 def _helper_reason(obj):
-    if _is_face_texture_card(obj):
-        return 'accessory_face_texture_card'
+    card_kind = _accessory_card_kind(obj)
+    if card_kind == "face":
+        return "accessory_face_texture_card"
+    if card_kind == "eyeparts":
+        return "accessory_eyeparts_texture_card"
+    if obj.get("scsp_duplicate_head_target"):
+        return "accessory_head_duplicate_overlay"
     source = _source_name(obj).casefold()
     name = obj.name.casefold()
     candidates = {source, name}
@@ -765,32 +807,21 @@ def _material_base_color_image(material):
             if node.type != "TEX_IMAGE" or node.image is None:
                 continue
             stem = Path(node.image.name).stem.lower()
-            if "_face_" in stem and not stem.endswith(("_sd", "_mask", "_lmask", "_rmask")):
+            if ("_face_" in stem or "_eyeparts_" in stem) and not stem.endswith(("_sd", "_mask", "_lmask", "_rmask")):
                 return node.image
     return None
 
 
-def _apply_accessory_face_makeup(plan, report):
-    """Transfer an accessory face-makeup texture onto the main head face material."""
-    carriers = []
-    seen_carriers = set()
-    head_face_meshes = []
-    seen_targets = set()
-
-    for part in plan:
-        kind_cf = str(part.get("kind", "")).casefold()
-        for mesh in part["meshes"]:
-            ptr = _object_pointer(mesh)
-            if _is_face_texture_card(mesh):
-                if ptr not in seen_carriers:
-                    seen_carriers.add(ptr)
-                    carriers.append(mesh)
-            elif kind_cf == "head" and _source_name(mesh).casefold() == "face":
-                if ptr not in seen_targets:
-                    seen_targets.add(ptr)
-                    head_face_meshes.append(mesh)
-
-    if not carriers or not head_face_meshes:
+def _transfer_accessory_texture(
+    plan,
+    report,
+    carriers,
+    target_meshes,
+    slot_predicate,
+    *,
+    kind_label="face",
+):
+    if not carriers or not target_meshes:
         return
 
     makeup_source = None
@@ -817,30 +848,27 @@ def _apply_accessory_face_makeup(plan, report):
         except (OSError, RuntimeError, ValueError):
             makeup_path = None
 
-    all_non_helper_meshes = [
+    target_set = set(target_meshes)
+    isolation_meshes = [
         mesh
         for part in plan
         for mesh in part["meshes"]
-        if mesh in head_face_meshes or _helper_reason(mesh) is not None
+        if mesh in target_set or _helper_reason(mesh) is not None
     ]
 
     processed_mats = set()
-    for target_mesh in head_face_meshes:
+    for target_mesh in target_meshes:
         target_slots = [
             slot
             for slot in target_mesh.material_slots
-            if slot.material is not None
-            and (
-                slot.material.name.lower().startswith("m_face")
-                or len(target_mesh.material_slots) == 1
-            )
+            if slot.material is not None and slot_predicate(slot, target_mesh)
         ]
         for slot in target_slots:
             mat_ptr = _object_pointer(slot.material)
             if mat_ptr in processed_mats:
                 continue
             material, isolated, _ = _isolate_shared_material(
-                {"material": slot.material, "meshes": all_non_helper_meshes}
+                {"material": slot.material, "meshes": isolation_meshes}
             )
             processed_mats.add(_object_pointer(material))
             tree, bsdf = _ensure_shader(material)
@@ -857,6 +885,7 @@ def _apply_accessory_face_makeup(plan, report):
             alpha = _ensure_alpha(material, tree, bsdf, color_node)
             report["makeup_face_transfers"].append(
                 {
+                    "kind": kind_label,
                     "from_mesh": makeup_source.name,
                     "to_mesh": target_mesh.name,
                     "material": material.name,
@@ -866,6 +895,113 @@ def _apply_accessory_face_makeup(plan, report):
                     "alpha": alpha,
                 }
             )
+
+
+def _sorted_world_coords(obj):
+    mw = obj.matrix_world
+    return sorted(
+        (round(co.x, 4), round(co.y, 4), round(co.z, 4))
+        for co in (mw @ v.co for v in obj.data.vertices)
+    )
+
+
+def _mark_accessory_head_duplicates(plan):
+    """Auto-detect accessory meshes that geometrically duplicate a main head mesh."""
+    head_by_sig = {}
+    head_coords_cache = {}
+    for part in plan:
+        if str(part.get("kind", "")).casefold() != "head":
+            continue
+        for mesh in part["meshes"]:
+            if _helper_reason(mesh) is not None:
+                continue
+            v_count = len(mesh.data.vertices)
+            p_count = len(mesh.data.polygons)
+            if v_count < 16 or p_count < 8:
+                continue
+            head_by_sig.setdefault((v_count, p_count), []).append(mesh)
+
+    if not head_by_sig:
+        return
+
+    for part in plan:
+        if str(part.get("kind", "")).casefold() != "acce":
+            continue
+        for mesh in part["meshes"]:
+            if mesh.data.shape_keys is not None:
+                continue
+            sig = (len(mesh.data.vertices), len(mesh.data.polygons))
+            candidates = head_by_sig.get(sig)
+            if not candidates:
+                continue
+            acce_coords = _sorted_world_coords(mesh)
+            for head_mesh in candidates:
+                h_ptr = _object_pointer(head_mesh)
+                if h_ptr not in head_coords_cache:
+                    head_coords_cache[h_ptr] = _sorted_world_coords(head_mesh)
+                head_coords = head_coords_cache[h_ptr]
+                if all(
+                    abs(a[0] - b[0]) < 1e-3
+                    and abs(a[1] - b[1]) < 1e-3
+                    and abs(a[2] - b[2]) < 1e-3
+                    for a, b in zip(acce_coords, head_coords)
+                ):
+                    mesh["scsp_duplicate_head_target"] = head_mesh.name
+                    break
+
+
+def _apply_accessory_face_makeup(plan, report):
+    """Transfer accessory face/eyeparts makeup textures onto main head materials."""
+    face_carriers = []
+    eyeparts_carriers = []
+    seen_carriers = set()
+    head_face_meshes = []
+    head_non_helper_meshes = []
+    seen_targets = set()
+
+    for part in plan:
+        kind_cf = str(part.get("kind", "")).casefold()
+        for mesh in part["meshes"]:
+            ptr = _object_pointer(mesh)
+            card_kind = _accessory_card_kind(mesh)
+            if card_kind == "face":
+                if ptr not in seen_carriers:
+                    seen_carriers.add(ptr)
+                    face_carriers.append(mesh)
+            elif card_kind == "eyeparts":
+                if ptr not in seen_carriers:
+                    seen_carriers.add(ptr)
+                    eyeparts_carriers.append(mesh)
+            elif kind_cf == "head" and _helper_reason(mesh) is None:
+                if ptr not in seen_targets:
+                    seen_targets.add(ptr)
+                    head_non_helper_meshes.append(mesh)
+                    if _source_name(mesh).casefold() == "face":
+                        head_face_meshes.append(mesh)
+
+    _transfer_accessory_texture(
+        plan,
+        report,
+        face_carriers,
+        head_face_meshes,
+        lambda slot, mesh: slot.material.name.lower().startswith("m_face") or len(mesh.material_slots) == 1,
+        kind_label="face",
+    )
+
+    def _is_eyeparts_slot(slot, _mesh):
+        if slot.material.name.lower().startswith(_EYE_PARTS_TARGET_PREFIXES):
+            return True
+        img = _material_base_color_image(slot.material)
+        return img is not None and "_eyeparts_" in img.name.lower()
+
+    _transfer_accessory_texture(
+        plan,
+        report,
+        eyeparts_carriers,
+        head_non_helper_meshes,
+        _is_eyeparts_slot,
+        kind_label="eyeparts",
+    )
 
 
 def _positive_weight_counts(mesh, arm):
@@ -1072,6 +1208,7 @@ def prepare_parts(parts, *, eye_bindings=True):
     }
 
     _process_materials(plan, report)
+    _mark_accessory_head_duplicates(plan)
     _apply_accessory_face_makeup(plan, report)
     if eye_bindings:
         _process_eye_bindings(plan, report)

@@ -320,7 +320,26 @@ def _build_mesh_object(
     me.update()
 
     if int(has_normals.value) and nl > 0 and len(me.loops) == nl:
-        me.normals_split_custom_set(loop_normals.reshape((nl, 3)))
+        ln = loop_normals.reshape((nl, 3)).copy()
+        lengths = np.linalg.norm(ln, axis=1)
+        bad_mask = (~np.isfinite(lengths)) | (lengths <= 1e-6)
+        if np.any(bad_mask):
+            bad_indices = set(np.flatnonzero(bad_mask).tolist())
+            for poly in me.polygons:
+                fallback = None
+                for li in poly.loop_indices:
+                    if li in bad_indices:
+                        if fallback is None:
+                            pn = poly.normal
+                            fallback = (
+                                (float(pn.x), float(pn.y), float(pn.z))
+                                if pn.length > 1e-6
+                                else (0.0, 0.0, 1.0)
+                            )
+                        ln[li] = fallback
+            good_mask = ~bad_mask
+            ln[good_mask] /= lengths[good_mask, None]
+        me.normals_split_custom_set(ln)
 
     nuv = int(num_uv_layers.value)
     if nuv > 0 and nl > 0:

@@ -1,8 +1,8 @@
-# scsp_mmd_tools (v0.1.2 Preview)
+# scsp_mmd_tools (v0.1.3 Preview)
 
 [简体中文](README.md) | **English**
 
-Current release: **v0.1.2 Preview** — A desktop GUI and CLI batch pipeline that converts SCSP character assets into clean, physics-free MMD models (`.pmx` + `textures/`) cleanly in background Blender processes, **without requiring Unity, PmxEditor, or any commercial/external Blender add-ons**.
+Current release: **v0.1.3 Preview** — A desktop GUI and CLI batch pipeline that converts SCSP character assets into clean, physics-free MMD models (`.pmx` + `textures/`) cleanly in background Blender processes, **without requiring Unity, PmxEditor, or any commercial/external Blender add-ons**.
 
 Keep `scsp_mmd_tools.exe` alongside `_internal/` when distributing or moving the packaged build.
 
@@ -74,6 +74,10 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1 -CreateZip
 Output is written to `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` (preserving existing `Outputs/`). Prebuilt `Tools/ufbx_bridge.dll` is included in the repository; to recompile it from C source with MinGW `gcc`, run `Tools/native/build_ufbx.ps1`.
 
 ## Changelog
+
+### v0.1.3 Preview (2026-11-17)
+
+- Automatic removal of overlapping duplicate geometry.
 
 ### v0.1.2 Preview (2026-11-17)
 

@@ -416,7 +416,113 @@ def test_niyari_morph_symmetric_smile() -> None:
     print("NIYARI_SYMMETRIC_SMILE_OK")
 
 
+def test_accessory_eyeparts_and_geometric_duplicate_auto_hiding() -> None:
+    """Verify accessory eyeparts makeup transfer + geometric duplicate overlay hiding."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        head_dir = root / "head_17"
+        acce_dir = root / "acce_92421_17desr_00_17"
+        head_dir.mkdir(parents=True)
+        acce_dir.mkdir(parents=True)
+
+        base_face = head_dir / "17_face_00_col.png"
+        base_eyeparts = head_dir / "17_eyeparts_00_col.png"
+        makeup_eyeparts = acce_dir / "17_eyeparts_2421_col.png"
+        for p in (base_face, base_eyeparts, makeup_eyeparts):
+            img = bpy.data.images.new(p.name, width=2, height=2)
+            img.filepath_raw = str(p)
+            img.file_format = "PNG"
+            img.save()
+
+        head_fbx = head_dir / "M_Head_17.fbx"
+        acce_fbx = acce_dir / "M_Acce_92421_17DESR_00_17.fbx"
+        head_fbx.write_bytes(b"head")
+        acce_fbx.write_bytes(b"acce")
+
+        img_base_face = bpy.data.images.load(str(base_face))
+        img_base_eyeparts = bpy.data.images.load(str(base_eyeparts))
+        img_makeup_eyeparts = bpy.data.images.load(str(makeup_eyeparts))
+
+        m_face = _new_material_with_image("M_face", img_base_face)
+        m_eyelash = _new_material_with_image("M_eyelash", img_base_eyeparts)
+        m_eyebrow = _new_material_with_image("M_eyebrow", img_base_eyeparts)
+        m_acce_eye = _new_material_with_image("M_eyelash_2421_17", img_makeup_eyeparts)
+        m_acce_unknown = bpy.data.materials.new(name="M_CustomOverlay")
+
+        # 16+ vertices so geometric duplicate detector matches head face geometry cleanly.
+        coords = [(float(i % 4) * 0.02, -0.08, 1.35 + float(i // 4) * 0.02) for i in range(16)]
+        polys = [
+            (r * 4 + c, r * 4 + c + 1, (r + 1) * 4 + c + 1, (r + 1) * 4 + c)
+            for r in range(3)
+            for c in range(3)
+        ]
+
+        def _make_grid(name, mat, src_obj, src_fbx):
+            md = bpy.data.meshes.new(name)
+            md.from_pydata(coords, [], polys)
+            obj = bpy.data.objects.new(name, md)
+            bpy.context.collection.objects.link(obj)
+            obj.data.materials.append(mat)
+            obj["scsp_source_object"] = src_obj
+            obj["scsp_source_fbx"] = str(src_fbx)
+            return obj
+
+        head_face = _make_grid("00_head__face", m_face, "face", head_fbx)
+        head_face.shape_key_add(name="Basis", from_mix=False)
+        head_lash = _make_triangle_mesh("00_head__eyelash_L", [m_eyelash])
+        head_lash["scsp_source_object"] = "eyelash_L"
+        head_lash["scsp_source_fbx"] = str(head_fbx)
+        head_brow = _make_triangle_mesh("00_head__eyebrow_L", [m_eyebrow])
+        head_brow["scsp_source_object"] = "eyebrow_L"
+        head_brow["scsp_source_fbx"] = str(head_fbx)
+
+        acce_eyeparts_card = _make_grid("05_acce__M_eyelash", m_acce_eye, "M_eyelash", acce_fbx)
+        acce_unknown_dup = _make_grid("05_acce__WeirdDuplicateFace", m_acce_unknown, "WeirdDuplicateFace", acce_fbx)
+        real_pin = _make_triangle_mesh("05_acce__face_metal", [m_acce_unknown])
+        real_pin["scsp_source_object"] = "face_metal"
+        real_pin["scsp_source_fbx"] = str(acce_fbx)
+
+        parts = [
+            {
+                "kind": "head",
+                "arm": None,
+                "objects": [head_face, head_lash, head_brow],
+                "meshes": [head_face, head_lash, head_brow],
+            },
+            {
+                "kind": "acce",
+                "arm": None,
+                "objects": [acce_eyeparts_card, acce_unknown_dup, real_pin],
+                "meshes": [acce_eyeparts_card, acce_unknown_dup, real_pin],
+            },
+        ]
+
+        report = preprocess_parts.prepare_parts(parts, eye_bindings=False)
+        hidden_reasons = {item["source_object"]: item["reason"] for item in report["hidden_objects"]}
+        assert hidden_reasons == {
+            "M_eyelash": "accessory_eyeparts_texture_card",
+            "WeirdDuplicateFace": "accessory_head_duplicate_overlay",
+        }, hidden_reasons
+        assert acce_eyeparts_card.hide_render and acce_unknown_dup.hide_render
+        assert not real_pin.hide_render
+        assert Path(
+            m_eyelash.node_tree.nodes["Principled BSDF"]
+            .inputs["Base Color"]
+            .links[0]
+            .from_node.image.filepath
+        ).resolve() == makeup_eyeparts.resolve()
+        assert Path(
+            m_eyebrow.node_tree.nodes["Principled BSDF"]
+            .inputs["Base Color"]
+            .links[0]
+            .from_node.image.filepath
+        ).resolve() == makeup_eyeparts.resolve()
+    print("ACCESSORY_EYEPARTS_AND_GEOM_DUPLICATE_AUTO_OK")
+
+
 if __name__ == "__main__":
     main()
     test_accessory_face_makeup_and_helper_hiding()
     test_niyari_morph_symmetric_smile()
+    test_accessory_eyeparts_and_geometric_duplicate_auto_hiding()
