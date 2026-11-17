@@ -318,6 +318,8 @@ def source_shape_key_report(meshes: list[bpy.types.Object]) -> dict[str, Any]:
                 f"{mesh.name} shape key reference must be Basis, got {reference}"
             )
         keys = [key.name for key in block.key_blocks if key.name != "Basis"]
+        if len(set(keys)) != len(keys):
+            raise ValueError(f"Duplicate shape key names in {mesh.name}")
         names.extend(keys)
         mesh_records.append(
             {
@@ -326,9 +328,7 @@ def source_shape_key_report(meshes: list[bpy.types.Object]) -> dict[str, Any]:
                 "keys": keys,
             }
         )
-    if len(set(names)) != len(names):
-        raise ValueError("Source shape key names overlap between meshes")
-    return {"mesh_keys": mesh_records, "keys": names}
+    return {"mesh_keys": mesh_records, "keys": list(dict.fromkeys(names))}
 
 
 def collect_export_objects() -> tuple[
@@ -668,6 +668,7 @@ def export_scene_to_pmx(
                 model.faces.append((face_verts[2], face_verts[1], face_verts[0]))
 
     # 3. Vertex Morphs (Shape Keys)
+    morph_by_name: dict[str, pmx.VertexMorph] = {}
     for mesh_idx, mesh_obj in enumerate(meshes):
         block = mesh_obj.data.shape_keys
         if block is None or block.reference_key is None:
@@ -678,7 +679,11 @@ def export_scene_to_pmx(
         for kb in block.key_blocks:
             if kb.name == "Basis":
                 continue
-            morph = pmx.VertexMorph(name=kb.name, name_e="", category=4)
+            morph = morph_by_name.get(kb.name)
+            if morph is None:
+                morph = pmx.VertexMorph(name=kb.name, name_e="", category=4)
+                morph_by_name[kb.name] = morph
+                model.morphs.append(morph)
             kb_data = kb.data
             for bl_vi in range(v_count):
                 pmx_indices = bl_vert_to_pmx_verts.get((mesh_idx, bl_vi))
@@ -690,7 +695,6 @@ def export_scene_to_pmx(
                 pmx_off = (float(delta.x), float(delta.z), float(delta.y))
                 for pvi in pmx_indices:
                     morph.offsets.append(pmx.VertexMorphOffset(index=pvi, offset=pmx_off))
-            model.morphs.append(morph)
 
     pmx.save(str(output), model, add_uv_count=add_uv_count)
     return material_records, alpha_by_name, texture_records

@@ -14,9 +14,18 @@ def _signature(obj):
     return hashlib.sha256(json.dumps(state,sort_keys=True).encode()).hexdigest()
 
 
+def _is_head_source_face(obj):
+    if obj.get('scsp_source_object')!='face':return False
+    src_fbx=str(obj.get('scsp_source_fbx','') or '').replace('\\','/').lower()
+    if any(tok in src_fbx for tok in ('/m_acce_','/m_dress_','/m_hair_')):return False
+    low=obj.name.lower()
+    if any(tok in low for tok in ('_acce__','_dress__','_hair__')):return False
+    return True
+
+
 def process(meshes,options=None):
     options=options or {}
-    matches=[o for o in meshes if o.get('scsp_source_object')=='face']
+    matches=[o for o in meshes if _is_head_source_face(o)]
     if len(matches)!=1:raise ValueError('Expected exactly one source face mesh')
     obj=matches[0]
     if obj.get('scsp_cylinder_face_normals'):raise ValueError('Face normals already processed')

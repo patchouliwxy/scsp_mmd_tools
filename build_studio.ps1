@@ -1,6 +1,6 @@
 ﻿param(
     [string]$Python = 'python',
-    [string]$Version = 'v0.1.3',
+    [string]$Version = 'v0.1.4',
     [switch]$CreateZip
 )
 $ErrorActionPreference = 'Stop'
