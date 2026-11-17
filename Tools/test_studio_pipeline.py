@@ -418,6 +418,77 @@ class CommentAndGuiTests(unittest.TestCase):
                     app._inspect_jobs.put(None)
                     root.destroy()
 
+    def test_pe_core_writes_portable_relative_texture_paths_and_audit_accepts_them(self) -> None:
+        import subprocess
+        repo_root = Path(__file__).resolve().parents[1]
+        sys.path.insert(0, str(repo_root / 'Tools'))
+        import pmx_io
+
+        required = [
+            '全ての親', 'センター', 'グルーブ',
+            '左足ＩＫ', '右足ＩＫ', '左つま先ＩＫ', '右つま先ＩＫ', '左足IK親', '右足IK親',
+            '左腕捩', '右腕捩', '左手捩', '右手捩', '左肩P', '右肩P', '左肩C', '右肩C',
+            '下半身', '上半身', '頭', '左目', '右目',
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            work = root / '_work'
+            work.mkdir()
+            src_tex = work / 'body.png'
+            src_tex.write_bytes(b'\x89PNG\r\n\x1a\n')
+            in_pmx = work / '03-semi.pmx'
+            out_pmx = root / 'FinalModel.pmx'
+            report_path = work / 'audit.json'
+
+            m = pmx_io.Model()
+            m.header = pmx_io.Header()
+            m.name = 'Test'
+            m.textures = [pmx_io.Texture(path=str(src_tex))]
+            for i, bname in enumerate(required):
+                b = pmx_io.Bone()
+                b.name, b.name_e = bname, bname
+                b.parent = -1 if i == 0 else 0
+                b.location = [float(i), 1.0, 0.0]
+                if 'ＩＫ' in bname:
+                    b.isIK = True
+                    b.target = 0
+                    lk = pmx_io.IKLink()
+                    lk.target = 0
+                    b.ik_links = [lk]
+                m.bones.append(b)
+            for co in ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]):
+                v = pmx_io.Vertex()
+                v.co = co
+                v.weight = pmx_io.BoneWeight()
+                v.weight.type = pmx_io.BoneWeight.BDEF1
+                v.weight.bones = [0]
+                m.vertices.append(v)
+            m.faces = [(0, 1, 2)]
+            mat = pmx_io.Material()
+            mat.name, mat.texture, mat.vertex_count = 'Mat0', 0, 3
+            m.materials = [mat]
+            pmx_io.save(in_pmx, m)
+
+            subprocess.run(
+                [sys.executable, str(repo_root / 'Tools' / 'pe_core.py'), '--', '--input', str(in_pmx), '--output', str(out_pmx), '--phase', 'finalize'],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            final_model = pmx_io.load(out_pmx)
+            self.assertEqual([t.path for t in final_model.textures], ['textures\\00_body.png'])
+            self.assertTrue((root / 'textures' / '00_body.png').is_file())
+
+            subprocess.run(
+                [sys.executable, str(repo_root / 'Tools' / 'audit_pe_result.py'), '--', '--input', str(in_pmx), '--output', str(out_pmx), '--report', str(report_path)],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            audit = json.loads(report_path.read_text(encoding='utf-8'))
+            self.assertEqual(audit['textures_missing'], [])
+            self.assertEqual(audit['textures_non_relative'], [])
+
 
 if __name__=='__main__':unittest.main()
 

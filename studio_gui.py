@@ -368,7 +368,7 @@ class StudioGui:
         self._refresh_actions()
 
     def _configure_window(self) -> None:
-        self.root.title("scsp_mmd_tools v0.1 (Preview)")
+        self.root.title("scsp_mmd_tools v0.1.1 (Preview)")
         try:
             dpi = float(self.root.winfo_fpixels("1i"))
         except Exception:

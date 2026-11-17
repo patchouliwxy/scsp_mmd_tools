@@ -1,8 +1,8 @@
-# scsp_mmd_tools (v0.1 Preview)
+# scsp_mmd_tools (v0.1.1 Preview)
 
 **简体中文** | [English](README.en.md)
 
-当前版本：**v0.1 预览版（Preview）** — SCSP 角色资产到 MMD 无物理 PMX 的桌面与命令行批处理工具：输入完整角色任务文件夹，自动生成无物理 PMX 与 `textures` 贴图目录。全部制作步骤在 Blender 后台自动完成，**无需 Unity、PmxEditor 或任何第三方商业/外部 Blender 插件**。
+当前版本：**v0.1.1 预览版（Preview）** — SCSP 角色资产到 MMD 无物理 PMX 的桌面与命令行批处理工具：输入完整角色任务文件夹，自动生成无物理 PMX 与 `textures` 贴图目录。全部制作步骤在 Blender 后台自动完成，**无需 Unity、PmxEditor 或任何第三方商业/外部 Blender 插件**。
 
 请保留 `scsp_mmd_tools.exe` 与 `_internal` 在同一文件夹，分发时复制整个发布目录。
 
@@ -64,6 +64,17 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1
 ```
 
 产物将生成在 `Releases/scsp_mmd_tools/scsp_mmd_tools.exe`（同步保留既有 `Outputs`）。仓库已预编并提供 `Tools/ufbx_bridge.dll`，如需自行重编原生桥接库，可执行 `Tools/native/build_ufbx.ps1`（需 MinGW `gcc`）。
+
+## 更新日志
+
+### v0.1.1 Preview (2026-11-17)
+
+- **修复 PMX 贴图路径写入绝对路径的问题**：`Tools/pe_core.py` 在收尾导出阶段不再将完整磁盘绝对路径写入 `.pmx`，统一改写为相对路径 `textures\<文件名>`，解决导入 MikuMikuDance（MMD）时因路径拼接失效导致的**模型全身纯白**问题，以及目录层级较深时超出 MMD/Windows 路径长度限制导致的**加载闪退**问题；同时确保移动模型文件夹或跨电脑分享后贴图依旧正常。
+- **同步完善校验与测试**：`Tools/audit_pe_result.py` 改为相对于成品 `.pmx` 目录解析贴图并禁止残留绝对路径；`Tools/test_studio_pipeline.py` 新增相对贴图路径回归测试。
+
+### v0.1 Preview (2026-11-16)
+
+- 首个预览版发布，内置开源 `ufbx` FBX 导入器与纯 Python `pmx_io` 读写器，无外部插件依赖批量导出干净无物理 `.pmx`。
 
 ## 开源协议与免责声明
 

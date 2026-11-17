@@ -1,8 +1,8 @@
-# scsp_mmd_tools (v0.1 Preview)
+# scsp_mmd_tools (v0.1.1 Preview)
 
 [简体中文](README.md) | **English**
 
-Current release: **v0.1 Preview** — A desktop GUI and CLI batch pipeline that converts SCSP character assets into clean, physics-free MMD models (`.pmx` + `textures/`) cleanly in background Blender processes, **without requiring Unity, PmxEditor, or any commercial/external Blender add-ons**.
+Current release: **v0.1.1 Preview** — A desktop GUI and CLI batch pipeline that converts SCSP character assets into clean, physics-free MMD models (`.pmx` + `textures/`) cleanly in background Blender processes, **without requiring Unity, PmxEditor, or any commercial/external Blender add-ons**.
 
 Keep `scsp_mmd_tools.exe` alongside `_internal/` when distributing or moving the packaged build.
 
@@ -72,6 +72,17 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1 -CreateZip
 ```
 
 Output is written to `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` (preserving existing `Outputs/`). Prebuilt `Tools/ufbx_bridge.dll` is included in the repository; to recompile it from C source with MinGW `gcc`, run `Tools/native/build_ufbx.ps1`.
+
+## Changelog
+
+### v0.1.1 Preview (2026-11-17)
+
+- **Fixed absolute texture paths in exported `.pmx` files**: `Tools/pe_core.py` (`finalize`) now writes portable relative paths (`textures\<filename>`) instead of full drive paths. This fixes two MikuMikuDance (MMD) bugs triggered when MMD joins the model folder with stored texture paths: **all-white materials** (broken texture lookups) and **crashes on load** when deep output directories pushed the combined path past Windows/MMD path length limits, and makes exported model folders portable across directories and PCs.
+- **Updated audit & regression tests**: `Tools/audit_pe_result.py` now resolves texture paths relative to the output `.pmx` directory and flags any non-relative entries; added coverage in `Tools/test_studio_pipeline.py`.
+
+### v0.1 Preview (2026-11-16)
+
+- Initial preview release with built-in open-source `ufbx` FBX import and pure-Python `pmx_io` export for batch converting SCSP assets to clean, physics-free `.pmx`.
 
 ## License & Disclaimer
 

@@ -114,9 +114,11 @@ def main():
         report['eye_grants']=eyes(model);names_and_panels(model);display(model)
         folder=out.parent/'textures';folder.mkdir(exist_ok=True)
         for i,t in enumerate(model.textures):
-            src=Path(t.path);dest=folder/(str(i).zfill(2)+'_'+src.name)
+            raw=Path(str(t.path).replace('\\','/'))
+            src=raw if raw.is_absolute() else (source.parent/raw)
+            dest=folder/(str(i).zfill(2)+'_'+src.name)
             if not src.is_file():raise FileNotFoundError(src)
-            shutil.copy2(src,dest);t.path=str(dest)
+            shutil.copy2(src,dest);t.path=f'textures\\{dest.name}'
     report['max_transform_layer']=order(model);validate(model)
     pmx.save(str(out),model,add_uv_count=max((len(v.additional_uvs) for v in model.vertices),default=0))
     report['after']={'bones':len(model.bones),'vertices':len(model.vertices),'faces':len(model.faces),'morphs':len(model.morphs),'IK':[b.name for b in model.bones if b.isIK],'frames':[d.name for d in model.display]};report['output']=str(out);report['output_sha256']=hashlib.sha256(out.read_bytes()).hexdigest()
