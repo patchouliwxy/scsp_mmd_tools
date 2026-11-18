@@ -1,0 +1,302 @@
+{
+  "schema": 1,
+  "source": "character-master-20006200.json",
+  "resourceVersion": "20006200@jSEgjcBSZG9ol5Cvnq67X3Y=",
+  "count": 42,
+  "characters": [
+    {
+      "id": 1,
+      "firstNameRoma": "mano",
+      "lastNameRoma": "sakuragi",
+      "height": "155cm",
+      "heightScale": 1.0
+    },
+    {
+      "id": 2,
+      "firstNameRoma": "hiori",
+      "lastNameRoma": "kazano",
+      "height": "154cm",
+      "heightScale": 0.9900000095367432
+    },
+    {
+      "id": 3,
+      "firstNameRoma": "meguru",
+      "lastNameRoma": "hachimiya",
+      "height": "157cm",
+      "heightScale": 1.0099999904632568
+    },
+    {
+      "id": 4,
+      "firstNameRoma": "kogane",
+      "lastNameRoma": "tsukioka",
+      "height": "165cm",
+      "heightScale": 1.059999942779541
+    },
+    {
+      "id": 5,
+      "firstNameRoma": "mamimi",
+      "lastNameRoma": "tanaka",
+      "height": "161cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 6,
+      "firstNameRoma": "sakuya",
+      "lastNameRoma": "shirase",
+      "height": "175cm",
+      "heightScale": 1.1200000047683716
+    },
+    {
+      "id": 7,
+      "firstNameRoma": "yuika",
+      "lastNameRoma": "mitsumine",
+      "height": "158cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 8,
+      "firstNameRoma": "kiriko",
+      "lastNameRoma": "yukoku",
+      "height": "160cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 9,
+      "firstNameRoma": "kaho",
+      "lastNameRoma": "komiya",
+      "height": "163cm",
+      "heightScale": 1.0499999523162842
+    },
+    {
+      "id": 10,
+      "firstNameRoma": "chiyoko",
+      "lastNameRoma": "sonoda",
+      "height": "149cm",
+      "heightScale": 0.9599999785423279
+    },
+    {
+      "id": 11,
+      "firstNameRoma": "juri",
+      "lastNameRoma": "saijo",
+      "height": "160cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 12,
+      "firstNameRoma": "rinze",
+      "lastNameRoma": "morino",
+      "height": "155cm",
+      "heightScale": 1.0
+    },
+    {
+      "id": 13,
+      "firstNameRoma": "natsuha",
+      "lastNameRoma": "arisugawa",
+      "height": "168cm",
+      "heightScale": 1.0800000429153442
+    },
+    {
+      "id": 14,
+      "firstNameRoma": "amana",
+      "lastNameRoma": "osaki",
+      "height": "159cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 15,
+      "firstNameRoma": "tenka",
+      "lastNameRoma": "osaki",
+      "height": "159cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 16,
+      "firstNameRoma": "chiyuki",
+      "lastNameRoma": "kuwayama",
+      "height": "163cm",
+      "heightScale": 1.0499999523162842
+    },
+    {
+      "id": 17,
+      "firstNameRoma": "asahi",
+      "lastNameRoma": "serizawa",
+      "height": "153cm",
+      "heightScale": 0.9800000190734863
+    },
+    {
+      "id": 18,
+      "firstNameRoma": "fuyuko",
+      "lastNameRoma": "mayuzumi",
+      "height": "163cm",
+      "heightScale": 1.0499999523162842
+    },
+    {
+      "id": 19,
+      "firstNameRoma": "mei",
+      "lastNameRoma": "izumi",
+      "height": "162cm",
+      "heightScale": 1.0399999618530273
+    },
+    {
+      "id": 20,
+      "firstNameRoma": "toru",
+      "lastNameRoma": "asakura",
+      "height": "160cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 21,
+      "firstNameRoma": "madoka",
+      "lastNameRoma": "higuchi",
+      "height": "159cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 22,
+      "firstNameRoma": "koito",
+      "lastNameRoma": "fukumaru",
+      "height": "148cm",
+      "heightScale": 0.949999988079071
+    },
+    {
+      "id": 23,
+      "firstNameRoma": "hinana",
+      "lastNameRoma": "ichikawa",
+      "height": "165cm",
+      "heightScale": 1.059999942779541
+    },
+    {
+      "id": 24,
+      "firstNameRoma": "nichika",
+      "lastNameRoma": "nanakusa",
+      "height": "158cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 25,
+      "firstNameRoma": "mikoto",
+      "lastNameRoma": "aketa",
+      "height": "170cm",
+      "heightScale": 1.090000033378601
+    },
+    {
+      "id": 26,
+      "firstNameRoma": "luca",
+      "lastNameRoma": "ikaruga",
+      "height": "161cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 27,
+      "firstNameRoma": "hana",
+      "lastNameRoma": "suzuki",
+      "height": "158cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 28,
+      "firstNameRoma": "haruki",
+      "lastNameRoma": "ikuta",
+      "height": "156cm",
+      "heightScale": 1.0099999904632568
+    },
+    {
+      "id": 78,
+      "firstNameRoma": "mami",
+      "lastNameRoma": "futami",
+      "height": "158cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 79,
+      "firstNameRoma": "ami",
+      "lastNameRoma": "futami",
+      "height": "158cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 80,
+      "firstNameRoma": "azusa",
+      "lastNameRoma": "miura",
+      "height": "168cm",
+      "heightScale": 1.0800000429153442
+    },
+    {
+      "id": 81,
+      "firstNameRoma": "ritsuko",
+      "lastNameRoma": "akizuki",
+      "height": "156cm",
+      "heightScale": 1.0099999904632568
+    },
+    {
+      "id": 83,
+      "firstNameRoma": "iori",
+      "lastNameRoma": "minase",
+      "height": "153cm",
+      "heightScale": 0.9800000190734863
+    },
+    {
+      "id": 84,
+      "firstNameRoma": "yayoi",
+      "lastNameRoma": "takatsuki",
+      "height": "145cm",
+      "heightScale": 0.9300000071525574
+    },
+    {
+      "id": 85,
+      "firstNameRoma": "miki",
+      "lastNameRoma": "hoshii",
+      "height": "161cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 86,
+      "firstNameRoma": "chihaya",
+      "lastNameRoma": "kisaragi",
+      "height": "162cm",
+      "heightScale": 1.0399999618530273
+    },
+    {
+      "id": 87,
+      "firstNameRoma": "takane",
+      "lastNameRoma": "shijo",
+      "height": "169cm",
+      "heightScale": 1.0800000429153442
+    },
+    {
+      "id": 88,
+      "firstNameRoma": "makoto",
+      "lastNameRoma": "kikuchi",
+      "height": "159cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 89,
+      "firstNameRoma": "haruka",
+      "lastNameRoma": "amami",
+      "height": "158cm",
+      "heightScale": 1.0199999809265137
+    },
+    {
+      "id": 90,
+      "firstNameRoma": "hazuki",
+      "lastNameRoma": "nanakusa",
+      "height": "160cm",
+      "heightScale": 1.0299999713897705
+    },
+    {
+      "id": 91,
+      "firstNameRoma": "",
+      "lastNameRoma": "purodhu-sa-",
+      "height": "未設定",
+      "heightScale": 1.0
+    },
+    {
+      "id": 93,
+      "firstNameRoma": "tsutomu",
+      "lastNameRoma": "amai",
+      "height": "未設定",
+      "heightScale": 1.0
+    }
+  ]
+}

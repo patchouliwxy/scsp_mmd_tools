@@ -435,7 +435,7 @@ def export_scene_to_pmx(
     model = pmx.Model()
     model.name = model_name
     model.name_e = model_name
-    model.comment = comment or "exported by scsp_mmd_tools"
+    model.comment = comment or "exported by scsp_mmd_tools\nauthor:魔法少女labubu/patchouliwxy"
     model.comment_e = model.comment
 
     # 1. Bones

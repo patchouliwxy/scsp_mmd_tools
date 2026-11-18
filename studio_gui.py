@@ -24,6 +24,7 @@ APP_DIR = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False)
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
+from motion_tab import MotionTab
 from studio_pipeline import (
     DEFAULT_BLENDER as _PIPELINE_DEFAULT_BLENDER,
     MIN_BLENDER_VERSION,
@@ -368,7 +369,7 @@ class StudioGui:
         self._refresh_actions()
 
     def _configure_window(self) -> None:
-        self.root.title("scsp_mmd_tools v0.1.4 (Preview)")
+        self.root.title("scsp_mmd_tools v0.2.0 (Preview)")
         try:
             dpi = float(self.root.winfo_fpixels("1i"))
         except Exception:
@@ -540,6 +541,39 @@ class StudioGui:
             bordercolor=[("active", danger_hover), ("disabled", danger_disabled)],
             foreground=[("disabled", "#FFFFFF")],
         )
+        style.configure("TabBar.TFrame", background="#F2F2F7")
+        style.configure(
+            "TabActive.TButton",
+            background="#FFFFFF",
+            foreground=accent,
+            bordercolor=hairline,
+            lightcolor="#FFFFFF",
+            darkcolor=hairline,
+            relief="flat",
+            padding=(14, 4),
+            font=("Microsoft YaHei UI", 9, "bold"),
+        )
+        style.map(
+            "TabActive.TButton",
+            background=[("active", "#FFFFFF")],
+            foreground=[("active", accent)],
+        )
+        style.configure(
+            "TabInactive.TButton",
+            background="#F2F2F7",
+            foreground=text_secondary,
+            bordercolor="#F2F2F7",
+            lightcolor="#F2F2F7",
+            darkcolor="#F2F2F7",
+            relief="flat",
+            padding=(14, 4),
+            font=("Microsoft YaHei UI", 9),
+        )
+        style.map(
+            "TabInactive.TButton",
+            background=[("active", "#E5E5EA")],
+            foreground=[("active", text_primary)],
+        )
         style.configure(
             "Treeview",
             rowheight=32,
@@ -617,6 +651,26 @@ class StudioGui:
             style="AppTitle.TLabel",
         ).pack(anchor="w")
 
+        nav_shell = tk.Frame(banner, bg="#E5E5EA", padx=1, pady=1)
+        nav_shell.pack(side="left", padx=(22, 0))
+        nav_bar = ttk.Frame(nav_shell, style="TabBar.TFrame", padding=3)
+        nav_bar.pack()
+        self._active_tab = "pmx"
+        self.pmx_tab_button = ttk.Button(
+            nav_bar,
+            text="角色 PMX",
+            style="TabActive.TButton",
+            command=lambda: self._switch_tab("pmx"),
+        )
+        self.pmx_tab_button.pack(side="left")
+        self.motion_tab_button = ttk.Button(
+            nav_bar,
+            text="动作 VMD",
+            style="TabInactive.TButton",
+            command=lambda: self._switch_tab("motion"),
+        )
+        self.motion_tab_button.pack(side="left", padx=(4, 0))
+
         header_right = tk.Frame(banner, bg="#FFFFFF")
         header_right.pack(side="right")
         self.env_badge_frame = tk.Frame(header_right, bg="#FFFFFF")
@@ -629,7 +683,20 @@ class StudioGui:
         )
         self.open_button.pack(side="left")
 
-        paths_card = self._create_card(self.root)
+        self._page_host = ttk.Frame(self.root, style="TFrame")
+        self._page_host.pack(fill="both", expand=True)
+        self._pmx_page = ttk.Frame(self._page_host, style="TFrame")
+        self._motion_page = ttk.Frame(self._page_host, style="TFrame")
+        self.motion_tab = MotionTab(
+            self._motion_page,
+            settings=self._settings,
+            save_settings=self._persist_settings,
+            default_output_root=APP_DIR / "Outputs",
+        )
+        self.motion_tab.pack(fill="both", expand=True)
+        self._pmx_page.pack(fill="both", expand=True)
+
+        paths_card = self._create_card(self._pmx_page)
         paths_card._card_outer.pack(fill="x", padx=18, pady=(14, 10))  # type: ignore[attr-defined]
         paths_inner = ttk.Frame(paths_card, style="Card.TFrame", padding=(16, 12))
         paths_inner.pack(fill="x")
@@ -671,7 +738,7 @@ class StudioGui:
         )
 
         body = tk.PanedWindow(
-            self.root,
+            self._pmx_page,
             orient="horizontal",
             sashwidth=7,
             sashpad=1,
@@ -683,7 +750,7 @@ class StudioGui:
             showhandle=False,
         )
 
-        bottom_card = self._create_card(self.root)
+        bottom_card = self._create_card(self._pmx_page)
         bottom_card._card_outer.pack(side="bottom", fill="x", padx=18, pady=(0, 14))  # type: ignore[attr-defined]
         body.pack(side="top", fill="both", expand=True, padx=18, pady=(0, 10))
 
@@ -1059,6 +1126,21 @@ class StudioGui:
         else:
             self.log_shell.pack_forget()
             self.toggle_log_button.configure(text="展开日志")
+
+    def _switch_tab(self, tab: str) -> None:
+        if tab not in {"pmx", "motion"}:
+            return
+        self._active_tab = tab
+        if tab == "pmx":
+            self._motion_page.pack_forget()
+            self._pmx_page.pack(fill="both", expand=True)
+            self.pmx_tab_button.configure(style="TabActive.TButton")
+            self.motion_tab_button.configure(style="TabInactive.TButton")
+        else:
+            self._pmx_page.pack_forget()
+            self._motion_page.pack(fill="both", expand=True)
+            self.pmx_tab_button.configure(style="TabInactive.TButton")
+            self.motion_tab_button.configure(style="TabActive.TButton")
 
     def _refresh_env_badges(self) -> None:
         for child in self.env_badge_frame.winfo_children():
@@ -1612,6 +1694,9 @@ class StudioGui:
         self._refresh_actions()
 
     def _open_output_directory(self) -> None:
+        if getattr(self, "_active_tab", "pmx") == "motion" and hasattr(self, "motion_tab"):
+            self.motion_tab.open_output()
+            return
         selected = list(self.tree.selection())
         target: Path | None = None
         for key in selected:
@@ -1744,6 +1829,8 @@ class StudioGui:
 
     def _persist_settings(self, path: Path | None = None) -> None:
         self._settings["default_pmx_comment"] = self._default_comment
+        if hasattr(self, "motion_tab"):
+            self._settings.update(self.motion_tab.read_settings())
         save_studio_settings(self._settings, path=path)
 
     def _save_default_comment(self) -> None:
@@ -2095,7 +2182,8 @@ class StudioGui:
         self.log_text.configure(state="disabled")
 
     def _on_close(self) -> None:
-        if self._building and not messagebox.askyesno(
+        motion_busy = hasattr(self, "motion_tab") and self.motion_tab.running
+        if (self._building or motion_busy) and not messagebox.askyesno(
             "退出工具",
             "后台仍有任务在制作。现在退出会中断当前进程，"
             "可能留下不完整输出。\n仍要退出吗？",
@@ -2108,6 +2196,8 @@ class StudioGui:
         except OSError:
             pass
         self._closing = True
+        if hasattr(self, "motion_tab"):
+            self.motion_tab.stop_polling()
         try:
             self._inspect_jobs.put_nowait(None)
         except queue.Full:

@@ -1,6 +1,6 @@
 ﻿param(
     [string]$Python = 'python',
-    [string]$Version = 'v0.1.4',
+    [string]$Version = 'v0.2.0',
     [switch]$CreateZip
 )
 $ErrorActionPreference = 'Stop'
@@ -32,7 +32,7 @@ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'Tools\ufbx_bridge.dll') -Destin
 # Build into a separate directory: PyInstaller clears its destination.
 # User Outputs inside the installed release must never be included in that clear.
 $PackageRoot = Join-Path $PSScriptRoot 'Build/package'
-& $Python -m PyInstaller --noconfirm --clean --windowed --onedir --name scsp_mmd_tools --hidden-import studio_pipeline --add-data 'Build/runtime/Tools;Tools' --add-data 'Resources;Resources' --add-data 'ThirdParty/ufbx/LICENSE;ThirdParty/ufbx' --distpath $PackageRoot --workpath Build/pyinstaller studio_gui.py
+& $Python -m PyInstaller --noconfirm --clean --windowed --onedir --name scsp_mmd_tools --hidden-import studio_pipeline --hidden-import motion_pipeline --hidden-import motion_tab --collect-all UnityPy --add-data 'Build/runtime/Tools;Tools' --add-data 'Resources;Resources' --add-data 'ThirdParty/ufbx/LICENSE;ThirdParty/ufbx' --distpath $PackageRoot --workpath Build/pyinstaller studio_gui.py
 if ($LASTEXITCODE -ne 0) { throw '打包失败' }
 $Built = Join-Path $PackageRoot 'scsp_mmd_tools'
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'README.md') -Destination (Join-Path $Built '使用说明.md') -Force

@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.blend
 *.blend1
+.venv/
 Outputs/
 
 # Build, release, local settings & archives

@@ -1,0 +1,684 @@
+{
+  "schema": 1,
+  "source": "official *_scenecreate.json",
+  "songs": {
+    "001_ambeve": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "ambeve_c",
+        "ambeve_d",
+        "ambeve_b",
+        "ambeve_e",
+        "ambeve_a"
+      ]
+    },
+    "005_stwing": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "stwing_c",
+        "stwing_d",
+        "stwing_b",
+        "stwing_e",
+        "stwing_a"
+      ]
+    },
+    "006_multis": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "multis_c",
+        "multis_d",
+        "multis_b",
+        "multis_e",
+        "multis_a"
+      ]
+    },
+    "012_neotef": {
+      "anim_slots": [
+        1,
+        3,
+        2,
+        5,
+        4
+      ],
+      "lip_syncs": [
+        "neotef_kogane",
+        "neotef_yuika",
+        "neotef_kiriko",
+        "neotef_sakuya",
+        "neotef_mamimi"
+      ]
+    },
+    "013_hideat": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "hideat_asahi",
+        "hideat_mei",
+        "hideat_fuyuko"
+      ]
+    },
+    "014_beachb": {
+      "anim_slots": [
+        1,
+        3,
+        2,
+        5,
+        4
+      ],
+      "lip_syncs": [
+        "beachb_kaho",
+        "beachb_juri",
+        "beachb_chiyoko",
+        "beachb_natsuha",
+        "beachb_rinze"
+      ]
+    },
+    "015_bloomy": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "bloomy_amana",
+        "bloomy_chiyuki",
+        "bloomy_tenka"
+      ]
+    },
+    "016_bokram": {
+      "anim_slots": [
+        1,
+        2,
+        4,
+        3
+      ],
+      "lip_syncs": [
+        "bokram_tooru",
+        "bokram_madoka",
+        "bokram_hinana",
+        "bokram_koito"
+      ]
+    },
+    "017_blackr": {
+      "anim_slots": [
+        1,
+        3,
+        2,
+        5,
+        4
+      ],
+      "lip_syncs": [
+        "blackr_kogane",
+        "blackr_yuika",
+        "blackr_kiriko",
+        "blackr_sakuya",
+        "blackr_mamimi"
+      ]
+    },
+    "018_itutur": {
+      "anim_slots": [
+        1,
+        3,
+        2,
+        5,
+        4
+      ],
+      "lip_syncs": [
+        "itutur_kaho",
+        "itutur_juri",
+        "itutur_chiyoko",
+        "itutur_natsuha",
+        "itutur_rinze"
+      ]
+    },
+    "025_shinyd": {
+      "anim_slots": [
+        1,
+        5,
+        4,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "shinyd_c",
+        "shinyd_d",
+        "shinyd_b",
+        "shinyd_e",
+        "shinyd_a"
+      ]
+    },
+    "036_shineg": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "shineg_c",
+        "shineg_d",
+        "shineg_b",
+        "shineg_e",
+        "shineg_a"
+      ]
+    },
+    "037_dyesky": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "dyesky_c",
+        "dyesky_d",
+        "dyesky_b",
+        "dyesky_e",
+        "dyesky_a"
+      ]
+    },
+    "042_hnokoe": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "hnokoe_c",
+        "hnokoe_d",
+        "hnokoe_b",
+        "hnokoe_e",
+        "hnokoe_a"
+      ]
+    },
+    "053_catchb": {
+      "anim_slots": [
+        1,
+        2,
+        4,
+        3
+      ],
+      "lip_syncs": [
+        "catchb_toru",
+        "catchb_madoka",
+        "catchb_hinana",
+        "catchb_koito"
+      ]
+    },
+    "054_priism": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "priism_mano",
+        "priism_meguru",
+        "priism_hiori"
+      ]
+    },
+    "057_pastel": {
+      "anim_slots": [
+        3,
+        2,
+        1
+      ],
+      "lip_syncs": [
+        "pastel_chiyuki",
+        "pastel_tenka",
+        "pastel_amana"
+      ]
+    },
+    "063_resona": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "lip_syncs": [
+        "resona_d",
+        "resona_e",
+        "resona_c",
+        "resona_f",
+        "resona_b",
+        "resona_g",
+        "resona_a"
+      ]
+    },
+    "098_fnable": {
+      "anim_slots": [
+        2,
+        1
+      ],
+      "lip_syncs": [
+        "fnable_mikoto",
+        "fnable_nichika"
+      ]
+    },
+    "101_hanamk": {
+      "anim_slots": [
+        3,
+        1,
+        2
+      ],
+      "lip_syncs": [
+        "hanamk_hana",
+        "hanamk_luca",
+        "hanamk_haruki"
+      ]
+    },
+    "106_hnouyn": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "hnokoe_c",
+        "hnokoe_d",
+        "hnokoe_b",
+        "hnokoe_e",
+        "hnokoe_a"
+      ]
+    },
+    "107_kudara": {
+      "anim_slots": [
+        3,
+        1,
+        2
+      ],
+      "lip_syncs": [
+        "kudara_haruki",
+        "kudara_luca",
+        "kudara_hana"
+      ]
+    },
+    "108_jigens": {
+      "anim_slots": [
+        1,
+        4,
+        5,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "jigens_kogane",
+        "jigens_yuika",
+        "jigens_kiriko",
+        "jigens_sakuya",
+        "jigens_mamimi"
+      ]
+    },
+    "109_linkss": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "linkss_asahi",
+        "linkss_mei",
+        "linkss_fuyuko"
+      ]
+    },
+    "110_mellow": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "mellow_chiyuki",
+        "mellow_tenka",
+        "mellow_amana"
+      ]
+    },
+    "111_cmonju": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "cmonju_c",
+        "cmonju_d",
+        "cmonju_b",
+        "cmonju_e",
+        "cmonju_a"
+      ]
+    },
+    "113_aiview": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "aiview_c",
+        "aiview_d",
+        "aiview_b",
+        "aiview_e",
+        "aiview_a"
+      ]
+    },
+    "115_goodby": {
+      "anim_slots": [
+        2,
+        1,
+        3,
+        4
+      ],
+      "lip_syncs": [
+        "goodby_madoka",
+        "goodby_toru",
+        "goodby_koito",
+        "goodby_hinana"
+      ]
+    },
+    "116_headst": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "headst_luca",
+        "headst_haruki",
+        "headst_hana"
+      ]
+    },
+    "123_kaitov": {
+      "anim_slots": [
+        1,
+        3,
+        2,
+        5,
+        4
+      ],
+      "lip_syncs": [
+        "kaitov_kaho",
+        "kaitov_juri",
+        "kaitov_chiyoko",
+        "kaitov_natsuha",
+        "kaitov_rinse"
+      ]
+    },
+    "125_realms": {
+      "anim_slots": [
+        1,
+        3,
+        2
+      ],
+      "lip_syncs": [
+        "realms_asahi",
+        "realms_mei",
+        "realms_fuyuko"
+      ]
+    },
+    "126_lastpr": {
+      "anim_slots": [
+        1,
+        5,
+        4,
+        2,
+        3
+      ],
+      "lip_syncs": [
+        "lastpr_kogane",
+        "lastpr_kiriko",
+        "lastpr_yuika",
+        "lastpr_mamimi",
+        "lastpr_sakuya"
+      ]
+    },
+    "127_snowfm": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "snowfm_c",
+        "snowfm_d",
+        "snowfm_b",
+        "snowfm_e",
+        "snowfm_a"
+      ]
+    },
+    "128_sweets": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "sweets_c",
+        "sweets_d",
+        "sweets_b",
+        "sweets_e",
+        "sweets_a"
+      ]
+    },
+    "132_meimei": {
+      "anim_slots": [
+        3,
+        1,
+        2
+      ],
+      "lip_syncs": [
+        "meimei_haruki",
+        "meimei_luca",
+        "meimei_hana"
+      ]
+    },
+    "140_poison": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "lip_syncs": [
+        "poison_c",
+        "poison_d",
+        "poison_b",
+        "poison_e"
+      ]
+    },
+    "141_prismf": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "prismF_c",
+        "prismF_d",
+        "prismF_b",
+        "prismF_e",
+        "prismF_a"
+      ]
+    },
+    "144_koikyn": {
+      "anim_slots": [
+        2,
+        3,
+        1
+      ],
+      "lip_syncs": [
+        "koikyn_hiori",
+        "koikyn_meguru",
+        "koikyn_mano"
+      ]
+    },
+    "145_itoshi": {
+      "anim_slots": [
+        1,
+        2,
+        4,
+        3
+      ],
+      "lip_syncs": [
+        "itoshi_toru",
+        "itoshi_madoka",
+        "itoshi_hinana",
+        "itoshi_koito"
+      ]
+    },
+    "147_queenp": {
+      "anim_slots": [
+        3,
+        1,
+        2,
+        4,
+        5
+      ],
+      "lip_syncs": [
+        "queenp_sakuya",
+        "queenp_kogane",
+        "queenp_mamimi",
+        "queenp_yuika",
+        "queenp_kiriko"
+      ]
+    },
+    "148_clover": {
+      "anim_slots": [
+        2,
+        1,
+        4,
+        3
+      ],
+      "lip_syncs": [
+        "clover_amana",
+        "clover_rinze",
+        "clover_nichika",
+        "clover_hinana"
+      ]
+    },
+    "167_nightp": {
+      "anim_slots": [
+        7,
+        8,
+        2,
+        6,
+        1,
+        4,
+        5,
+        3
+      ],
+      "lip_syncs": [
+        "nightp_mikoto",
+        "nightp_hana",
+        "nightp_mamimi",
+        "nightp_madoka",
+        "nightp_mano",
+        "nightp_chiyuki",
+        "nightp_mei",
+        "nightp_natsuha"
+      ]
+    },
+    "173_aiknow": {
+      "anim_slots": [
+        3,
+        1,
+        2
+      ],
+      "lip_syncs": [
+        "aiknow_haruki",
+        "aiknow_luca",
+        "aiknow_hana"
+      ]
+    },
+    "178_border": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "lip_syncs": [
+        "border_d",
+        "border_e",
+        "border_c",
+        "border_f",
+        "border_b",
+        "border_g",
+        "border_a"
+      ]
+    },
+    "180_karmad": {
+      "anim_slots": [
+        2,
+        1
+      ],
+      "lip_syncs": [
+        "karmad_toru",
+        "karmad_kiriko"
+      ]
+    },
+    "219_overlh": {
+      "anim_slots": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "lip_syncs": [
+        "overlh_d",
+        "overlh_e",
+        "overlh_c",
+        "overlh_f",
+        "overlh_b",
+        "overlh_g",
+        "overlh_a"
+      ]
+    }
+  }
+}

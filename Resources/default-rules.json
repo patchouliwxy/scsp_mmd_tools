@@ -1,0 +1,114 @@
+{
+  "schema": 1,
+  "fps": 30,
+  "units_per_meter": 12.5,
+  "source_axes": [
+    -1,
+    1,
+    -1
+  ],
+  "formation_origin": "group",
+  "body_scale": null,
+  "ik_mode": "fk",
+  "camera_mode": "adapted",
+  "camera_interpolation": "smooth",
+  "camera_zoom_compensation": false,
+  "camera_axes": [
+    1,
+    1,
+    1
+  ],
+  "camera_fov_mode": "degrees",
+  "camera_stage_offset": [
+    0,
+    0,
+    0
+  ],
+  "camera_target_height_scale": true,
+  "camera_shooting_offsets": {
+    "BustUp": [
+      0.0,
+      0.1,
+      0.075
+    ],
+    "FaceUp": [
+      0.0,
+      0.1,
+      0.05
+    ],
+    "UpperUp": [
+      0.0,
+      0.0,
+      0.15
+    ],
+    "LowerUp": [
+      0.0,
+      -0.3,
+      0.2
+    ],
+    "FullBody": [
+      0.0,
+      0.0,
+      0.4
+    ]
+  },
+  "camera_dynamic_actor_anchor": true,
+  "camera_sparse_reduce": true,
+  "camera_noise_filter": false,
+  "camera_zoom_compensation_max_shift_pmx": null,
+  "mouth_offset_frames": 0,
+  "mouth_routes": {},
+  "character_aliases": {
+    "1": "mano",
+    "2": "hiori",
+    "3": "meguru",
+    "4": "kogane",
+    "5": "mamimi",
+    "6": "sakuya",
+    "7": "yuika",
+    "8": "kiriko",
+    "9": "kaho",
+    "10": "chiyoko",
+    "11": "juri",
+    "12": "rinze",
+    "13": "natsuha",
+    "14": "amana",
+    "15": "tenka",
+    "16": "chiyuki",
+    "17": "asahi",
+    "18": "fuyuko",
+    "19": "mei",
+    "20": "toru",
+    "21": "madoka",
+    "22": "koito",
+    "23": "hinana",
+    "24": "nichika",
+    "25": "mikoto",
+    "26": ["luca", "ruka"],
+    "27": "hana",
+    "28": "haruki",
+    "78": "mami",
+    "79": "ami",
+    "80": "azusa",
+    "81": "ritsuko",
+    "83": "iori",
+    "84": "yayoi",
+    "85": "miki",
+    "86": "chihaya",
+    "87": "takane",
+    "88": "makoto",
+    "89": "haruka",
+    "90": "hazuki",
+    "91": "",
+    "93": "tsutomu"
+  },
+  "bone_map": {},
+  "morph_map": {},
+  "rest_corrections": {},
+  "expression_fps": 60,
+  "wink_edge_frames": 6,
+  "eye_targets": {},
+  "gaze_mode": "source",
+  "duration_policy": "hold",
+  "allow_missing_morphs": false
+}
