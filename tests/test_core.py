@@ -522,5 +522,91 @@ class CoreTests(unittest.TestCase):
         self.assertIn('exported by scsp_mmd_tools\\nauthor:魔法少女labubu/patchouliwxy',pmx_src)
         self.assertIn('author:魔法少女labubu/patchouliwxy',mot_src)
 
+    def test_bake_gaze_odd_60fps_cutin_avoids_rounding_oscillation(self):
+        from scsp_motion.math3d import rotate
+        rules=load_rules();rules['gaze_mode']='approximate'
+        model=pmx_io.Model()
+        for name,parent,pos in [('頭',-1,[0,10,0]),('左目',0,[0.3,10.5,-0.2]),('右目',0,[-0.3,10.5,-0.2])]:
+            b=pmx_io.Bone();b.name=name;b.parent=parent;b.location=pos;model.bones.append(b)
+        world={0:np.tile([0,10.,0],(8,1)),1:np.tile([0.3,10.5,-0.2],(8,1)),2:np.tile([-0.3,10.5,-0.2],(8,1))}
+        # Start moving left over 8 frames (60fps), then cut in at odd 60fps frame 3 (30fps=1.5) to same side Up
+        # With round(1.5)=2, old code jumped forward to frame 2's angle before frame 2 had even happened!
+        events=[
+            dict(eventName='ChangeTarget',startFrame=0,arg1='LeftMiddle',arg2='8'),
+            dict(eventName='ChangeTarget',startFrame=3,arg1='LeftUp',arg2='6'),
+        ]
+        tracks,_=bake_gaze(events,model,world,{},{},None,rules)
+        def eye_dir(f):
+            fs,vs=tracks['左目']
+            idx=int(np.searchsorted(fs,f,side='right')-1)
+            return rotate(vs[max(0,idx),3:],[0.,0.,-1.])
+        # At frame 2 (times=4.0), yaw must be between frame 1 (times=2.0) and frame 3 (times=6.0) monotonically,
+        # and strictly less than LeftMiddle reached at frame 2 without cutin (since prev_y came from midpoint t=3.0).
+        xs=[eye_dir(f)[0] for f in range(8)]
+        for a,b in zip(xs,xs[1:]):
+            self.assertGreaterEqual(b,a-1e-9)
+        self.assertGreater(xs[2],xs[1])
+
+    def test_partial_slot_export_solves_all_slots_for_cross_character_gaze(self):
+        import motion_pipeline
+        from scsp_motion import vmd
+        from scsp_motion.backend import BuiltinPoseBackend
+        from scsp_motion.math3d import rotate
+        with tempfile.TemporaryDirectory() as t:
+            root_tmp=Path(t)
+            td=root_tmp/'task'
+            for sub in ('animations','data','mouth','root-data'):(td/sub).mkdir(parents=True,exist_ok=True)
+            def const_curve(v):return dict(m_Curve=[dict(time=0.0,value=v,inSlope=0.0,outSlope=0.0),dict(time=1.0,value=v,inSlope=0.0,outSlope=0.0)])
+            for slot_idx,cid,x,z in ((1,1,0.0,0.0),(2,2,1.0,2.0)):
+                (td/f'animations/test_{slot_idx:02d}.anim').write_text(f'anim{slot_idx}')
+                (td/f'root-data/test_{slot_idx:02d}_root.json').write_text(json.dumps(dict(pos_x=const_curve(x),pos_z=const_curve(z))))
+                (td/f'mouth/chara_{cid}_mouth.json').write_text(json.dumps(dict(frameRate=30,datas=[dict(a=0,i=0,u=0,e=0,o=0)]*31)))
+            (td/'data/test_01_exp.json').write_text(json.dumps(dict(events=[dict(eventName='ChangeTarget',startFrame=0,arg1='Character02',arg2='0')])))
+            (td/'data/test_02_exp.json').write_text(json.dumps(dict(events=[])))
+            fake_info=dict(
+                schema=1,task_dir=str(td),song='song_partial',
+                slots=[
+                    dict(slot=1,character_id=1,body=str(td/'animations/test_01.anim'),root=str(td/'root-data/test_01_root.json'),
+                         expression=str(td/'data/test_01_exp.json'),duration=1.0),
+                    dict(slot=2,character_id=2,body=str(td/'animations/test_02.anim'),root=str(td/'root-data/test_02_root.json'),
+                         expression=str(td/'data/test_02_exp.json'),duration=1.0),
+                ],
+                mouths=[str(td/'mouth/chara_1_mouth.json'),str(td/'mouth/chara_2_mouth.json')],
+                camera=None,warnings=[],sequence_cuts=[],
+            )
+            bp=BuiltinPoseBackend()
+            cal=bp.calibrate(root_tmp/'cal_tmp')
+            zero_rot=np.tile(cal['neutral_rotations'],(31,1,1))
+            zero_pos=np.tile(cal['neutral_positions'],(31,1,1))
+            def fake_humanoid(path,model):
+                return dict(duration=1.0,frameCount=31,channels={},omittedChannels=[])
+            class FakeBackend:
+                model=bp.model;identity=bp.identity
+                def calibrate(self,w):return cal
+                def solve(self,req,w):return zero_pos.copy(),zero_rot.copy(),{}
+            rules_path=root_tmp/'rules.json'
+            rules_path.write_text(json.dumps({'character_aliases':{'1':'chara_1','2':'chara_2'}}))
+            captured_gaze=[]
+            orig_bake=bake_gaze
+            def spy_bake(*args,**kwargs):
+                out_gaze=orig_bake(*args,**kwargs)
+                captured_gaze.append(out_gaze[0])
+                return out_gaze
+            with patch('motion_pipeline.inspect_task',return_value=fake_info), \
+                 patch('motion_pipeline.root_curves',side_effect=lambda p:json.loads(Path(p).read_text(encoding='utf-8'))), \
+                 patch('motion_pipeline.humanoid_input',side_effect=fake_humanoid), \
+                 patch('motion_pipeline.bake_gaze',side_effect=spy_bake):
+                res=motion_pipeline.build_task(td,root_tmp/'out',rules_path=rules_path,slots=[1],gaze_mode='approximate',backend=FakeBackend())
+            self.assertEqual(len(res['characters']),1)
+            self.assertEqual(res['characters'][0]['slot'],1)
+            self.assertEqual(res['characters'][0]['gaze']['unknown_targets'],{})
+            self.assertTrue(Path(res['characters'][0]['file']).is_file())
+            # Slot 2 is offset in front-side, so Character02 aiming steers eye horizontally in Slot 2's direction!
+            basis=np.asarray(res['formation']['root_xz_to_mmd'])
+            delta_mmd=np.array([1.0,2.0])@basis
+            aim_vec=rotate(captured_gaze[0]['左目'][1][0,3:],[0.,0.,-1.])
+            self.assertGreater(abs(aim_vec[0]),0.05)
+            self.assertGreater(aim_vec[0]*delta_mmd[0],0.0)
+
 
 if __name__=='__main__':unittest.main()

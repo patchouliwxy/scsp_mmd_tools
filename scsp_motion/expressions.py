@@ -259,8 +259,8 @@ def bake_gaze(events,model,world_positions,bone_tracks,all_actors,camera_positio
                 tgt_y=np.zeros(count,dtype=float);tgt_p=np.zeros(count,dtype=float)
             mask=times>=start
             if not np.any(mask):continue
-            idx0=min(int(round(start*30.0/fps60)),count-1)
-            prev_y=cur_yaw[idx0];prev_p=cur_pitch[idx0]
+            prev_y=float(np.interp(start,times,cur_yaw))
+            prev_p=float(np.interp(start,times,cur_pitch))
             if duration<=0:
                 alpha=np.ones(count,dtype=float)
             else:

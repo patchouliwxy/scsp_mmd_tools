@@ -92,9 +92,8 @@ def build_task(task_dir,output_root,*,backend_path=None,target_pmx=None,rules_pa
             if timing['body_hold_tail_seconds']>.001:
                 report['warnings'].append(f"站位 {number}: 身体动作和根位移末帧保持约 {timing['body_hold_tail_seconds']:.3f} 秒以对齐歌曲时间轴；未重建缺失的后续舞蹈或 UCS 切段。")
         save()
-        solved={}
-        for index,slot in enumerate(s for s in info['slots'] if s['slot'] in selected):
-            s=slot['slot'];emit(8+index*55/len(selected),f'站位 {s}: 解析 Humanoid 曲线与解算骨骼')
+        def solve_slot(slot,model,*,write_debug_samples=False,progress_pct=8):
+            s=slot['slot']
             if slot.get('body_sha256') and sha(slot['body'])!=slot['body_sha256']:raise ValueError('身体动作哈希与导出报告不符')
             request=humanoid_input(Path(slot['body']),backend.model)
             root=roots[s]
@@ -108,23 +107,38 @@ def build_task(task_dir,output_root,*,backend_path=None,target_pmx=None,rules_pa
             timing=dict(timeline['slots'][str(s)],body_duration=request['duration'],
                         source_frame_count=request['frameCount'],output_frame_count=count,
                         body_hold_tail_seconds=max(0.,timeline['duration']-request['duration']))
-            if count>request['frameCount']:
-                emit(8+index*55/len(selected),f"站位 {s}: 保持原时间采样，末帧补齐到共同时间轴（约 {timing['body_hold_tail_seconds']:.3f} 秒）")
+            if write_debug_samples and count>request['frameCount']:
+                emit(progress_pct,f"站位 {s}: 保持原时间采样，末帧补齐到共同时间轴（约 {timing['body_hold_tail_seconds']:.3f} 秒）")
             root_p=np.stack([sample(root['pos_'+a],times) for a in 'xz'],axis=1)
             displacement=(root_p@basis-origin)*rules['units_per_meter']
-            tracks,ik,retarget,world=convert_pose(models[s],backend.model,cal,p,q,displacement,rules,bone_names)
-            checkpoints=sorted(set([0,min(30,count-1),min(150,count-1),min(900,count-1),count-1]))
-            verify_names=set(retarget['mapped_bones'])-({'左目','右目'} if rules['gaze_mode']=='approximate' else set())
-            expected={str(f):{b.name:world[i][f].tolist() for i,b in enumerate(models[s].bones) if b.name in verify_names} for f in checkpoints}
-            write_json(work/f'slot_{s:02d}'/'expected-fk-samples.json',expected)
-            solved[s]=dict(slot=slot,bones=tracks,ik=ik,retarget=retarget,world=world,
-                           duration=request['duration'],timing=timing,source_omitted_channels=request['omittedChannels'])
+            tracks,ik,retarget,world=convert_pose(model,backend.model,cal,p,q,displacement,rules,bone_names)
+            if write_debug_samples:
+                checkpoints=sorted(set([0,min(30,count-1),min(150,count-1),min(900,count-1),count-1]))
+                verify_names=set(retarget['mapped_bones'])-({'左目','右目'} if rules['gaze_mode']=='approximate' else set())
+                expected={str(f):{b.name:world[i][f].tolist() for i,b in enumerate(model.bones) if b.name in verify_names} for f in checkpoints}
+                write_json(work/f'slot_{s:02d}'/'expected-fk-samples.json',expected)
+            return dict(slot=slot,bones=tracks,ik=ik,retarget=retarget,world=world,
+                        duration=request['duration'],timing=timing,source_omitted_channels=request['omittedChannels'])
+
+        solved={}
+        for index,slot in enumerate(s for s in info['slots'] if s['slot'] in selected):
+            s=slot['slot'];pct=8+index*55/len(selected);emit(pct,f'站位 {s}: 解析 Humanoid 曲线与解算骨骼')
+            solved[s]=solve_slot(slot,models[s],write_debug_samples=True,progress_pct=pct)
+        all_solved=dict(solved); all_models=dict(models)
+        if len(all_solved)<len(info['slots']) and (rules['gaze_mode']=='approximate' or (rules['camera_mode']!='off' and info['camera'])):
+            generic_model=load_generic_target(generic_profile)
+            for slot in info['slots']:
+                s=slot['slot']
+                if s in all_solved:continue
+                emit(64,f'站位 {s}: 计算全站位头部/锚点参考位置')
+                all_models[s]=generic_model
+                all_solved[s]=solve_slot(slot,generic_model,write_debug_samples=False)
         cameras=None;camera_pos=None
         if rules['camera_mode']!='off' and info['camera']:
             emit(68,'转换相机采样与镜头切换')
-            actor_anchors={s:{b.name:d['world'][i] for i,b in enumerate(models[s].bones)
+            actor_anchors={s:{b.name:d['world'][i] for i,b in enumerate(all_models[s].bones)
                               if b.name in ('頭','首','上半身3','上半身2','上半身','下半身','センター','左手首','左ひじ','右手首','右ひじ')}
-                           for s,d in solved.items()}
+                           for s,d in all_solved.items()}
             slot_characters={s['slot']:s['character_id'] for s in info['slots']}
             cameras,camera_pos,camreport=bake_camera(info['camera'],count,origin,basis,rules,
                                                      actor_positions=actor_anchors,slot_characters=slot_characters)
@@ -134,7 +148,7 @@ def build_task(task_dir,output_root,*,backend_path=None,target_pmx=None,rules_pa
             validation=vmd.write(path,'カメラ・照明',cameras=cameras)
             report['camera']=dict(file=str(path),sha256=sha(path),validation=validation,**camreport)
         elif rules['camera_mode']!='off':report['warnings'].append('输入未提供相机数据，未生成相机 VMD。')
-        all_heads={s:d['world'][next(i for i,b in enumerate(models[s].bones) if b.name=='頭')] for s,d in solved.items()}
+        all_heads={s:d['world'][next(i for i,b in enumerate(all_models[s].bones) if b.name=='頭')] for s,d in all_solved.items()}
         for index,(s,d) in enumerate(solved.items()):
             emit(72+index*25/len(selected),f'站位 {s}: 烘焙表情、口型与眼部并写入 VMD')
             mouth=mouth_for(d['slot'],info,rules)
