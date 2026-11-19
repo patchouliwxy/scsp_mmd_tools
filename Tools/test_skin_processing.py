@@ -521,8 +521,99 @@ def test_accessory_eyeparts_and_geometric_duplicate_auto_hiding() -> None:
     print("ACCESSORY_EYEPARTS_AND_GEOM_DUPLICATE_AUTO_OK")
 
 
+def test_material_holder_descendants_and_hair_eyebrow_card() -> None:
+    """Verify MaterialHolder child meshes hide cleanly and hair M_eyebrow updates M_eyebrow."""
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        head_dir = root / "head_21"
+        hair_dir = root / "hair_21_015"
+        head_dir.mkdir(parents=True)
+        hair_dir.mkdir(parents=True)
+
+        base_eyeparts = head_dir / "21_eyeparts_00_col.png"
+        hair_eyeparts = hair_dir / "21_eyeparts_02_col .png"
+        for p in (base_eyeparts, hair_eyeparts):
+            img = bpy.data.images.new(p.name, width=2, height=2)
+            img.filepath_raw = str(p)
+            img.file_format = "PNG"
+            img.save()
+
+        head_fbx = head_dir / "M_Head_21.fbx"
+        hair_fbx = hair_dir / "M_Hair_21_015_00000.fbx"
+        head_fbx.write_bytes(b"head")
+        hair_fbx.write_bytes(b"hair")
+
+        img_base = bpy.data.images.load(str(base_eyeparts))
+        img_hair = bpy.data.images.load(str(hair_eyeparts))
+        m_brow = _new_material_with_image("M_eyebrow", img_base)
+        m_lash = _new_material_with_image("M_eyelash", img_base)
+        m_hair_brow = _new_material_with_image("M_eyebrow_02", img_hair)
+        m_extra = bpy.data.materials.new(name="M_DummyHolder")
+
+        head_brow = _make_triangle_mesh("00_head__eyebrow_L", [m_brow])
+        head_brow["scsp_source_object"] = "eyebrow_L"
+        head_brow["scsp_source_fbx"] = str(head_fbx)
+        head_lash = _make_triangle_mesh("00_head__eyelash_L", [m_lash])
+        head_lash["scsp_source_object"] = "eyelash_L"
+        head_lash["scsp_source_fbx"] = str(head_fbx)
+
+        holder = bpy.data.objects.new("02_hair__MaterialHolder", None)
+        bpy.context.collection.objects.link(holder)
+        holder["scsp_source_object"] = "MaterialHolder"
+        holder["scsp_source_fbx"] = str(hair_fbx)
+
+        hair_brow_card = _make_triangle_mesh("02_hair__M_eyebrow", [m_hair_brow])
+        hair_brow_card.parent = holder
+        hair_brow_card["scsp_source_object"] = "M_eyebrow"
+        hair_brow_card["scsp_source_fbx"] = str(hair_fbx)
+
+        misc_holder_child = _make_triangle_mesh("02_hair__WeirdSwatch", [m_extra])
+        misc_holder_child.parent = holder
+        misc_holder_child["scsp_source_object"] = "WeirdSwatch"
+        misc_holder_child["scsp_source_fbx"] = str(hair_fbx)
+
+        parts = [
+            {
+                "kind": "head",
+                "arm": None,
+                "objects": [head_brow, head_lash],
+                "meshes": [head_brow, head_lash],
+            },
+            {
+                "kind": "hair",
+                "arm": None,
+                "objects": [holder, hair_brow_card, misc_holder_child],
+                "meshes": [hair_brow_card, misc_holder_child],
+            },
+        ]
+
+        report = preprocess_parts.prepare_parts(parts, eye_bindings=False)
+        hidden_reasons = {item["source_object"]: item["reason"] for item in report["hidden_objects"]}
+        assert hidden_reasons == {
+            "MaterialHolder": "material_holder",
+            "M_eyebrow": "eyebrow_texture_card",
+            "WeirdSwatch": "material_holder",
+        }, hidden_reasons
+        assert holder.hide_render and hair_brow_card.hide_render and misc_holder_child.hide_render
+        assert Path(
+            m_brow.node_tree.nodes["Principled BSDF"]
+            .inputs["Base Color"]
+            .links[0]
+            .from_node.image.filepath
+        ).resolve() == hair_eyeparts.resolve()
+        assert Path(
+            m_lash.node_tree.nodes["Principled BSDF"]
+            .inputs["Base Color"]
+            .links[0]
+            .from_node.image.filepath
+        ).resolve() == base_eyeparts.resolve()
+    print("MATERIAL_HOLDER_AND_HAIR_EYEBROW_OK")
+
+
 if __name__ == "__main__":
     main()
     test_accessory_face_makeup_and_helper_hiding()
     test_niyari_morph_symmetric_smile()
     test_accessory_eyeparts_and_geometric_duplicate_auto_hiding()
+    test_material_holder_descendants_and_hair_eyebrow_card()
