@@ -118,8 +118,44 @@ def bake_morphs(exp_path,mouth_path,frame_count,rules,model,morph_names):
                        mouth_policy='sampled vowels at source rate; out-of-range zero; tongue/db not mapped'),gaze
 
 
+def _yaw_pitch_to_quat(yaw_deg, pitch_deg):
+    """Build local MMD eye quaternion from +X=left yaw and +Y=up pitch (forward=-Z)."""
+    hy = np.deg2rad(-yaw_deg) * 0.5
+    hp = np.deg2rad(pitch_deg) * 0.5
+    sy, cy = np.sin(hy), np.cos(hy)
+    sp, cp = np.sin(hp), np.cos(hp)
+    # q_yaw(0, sy, 0, cy) * q_pitch(sp, 0, 0, cp)
+    return np.stack((cy * sp, sy * cp, -sy * sp, cy * cp), axis=-1)
+
+
+def _aim_world_target(eye_world_pos, mid_eye_pos, head_rot, target_world_pos,
+                      max_yaw_deg, max_pitch_up_deg, max_pitch_down_deg,
+                      min_conv_dist, fade_start_deg=75.0, fade_end_deg=115.0):
+    """Aim from eye_world_pos toward target_world_pos in Head-local space with guards."""
+    rel_mid = target_world_pos - mid_eye_pos
+    dist_mid = np.linalg.norm(rel_mid, axis=-1, keepdims=True)
+    safe_dir = np.where(dist_mid > 1e-6, rel_mid / np.maximum(dist_mid, 1e-6), np.array([0., 0., -1.]))
+    safe_target = np.where(dist_mid < min_conv_dist, mid_eye_pos + safe_dir * min_conv_dist, target_world_pos)
+    d = unit(rotate(inv(head_rot), safe_target - eye_world_pos))
+    dx, dy, dz = d[:, 0], d[:, 1], d[:, 2]
+    fwd = -dz
+    theta_deg = np.rad2deg(np.arctan2(np.hypot(dx, dy), fwd))
+    fade = np.clip((fade_end_deg - theta_deg) / max(fade_end_deg - fade_start_deg, 1e-6), 0.0, 1.0)
+    raw_yaw = np.rad2deg(np.arctan2(dx, np.maximum(fwd, 1e-4)))
+    raw_pitch = np.rad2deg(np.arctan2(dy, np.maximum(np.hypot(dx, np.maximum(fwd, 0.0)), 1e-4)))
+    clamped = int(np.sum(
+        (np.abs(raw_yaw) > max_yaw_deg)
+        | (raw_pitch > max_pitch_up_deg)
+        | (raw_pitch < -max_pitch_down_deg)
+        | (theta_deg > fade_start_deg)
+    ))
+    yaw = np.clip(raw_yaw, -max_yaw_deg, max_yaw_deg) * fade
+    pitch = np.clip(raw_pitch, -max_pitch_down_deg, max_pitch_up_deg) * fade
+    return yaw, pitch, clamped
+
+
 def bake_gaze(events,model,world_positions,bone_tracks,all_actors,camera_positions,rules):
-    """Bake bounded eye aiming. Symbolic targets are explicit approximations."""
+    """Bake bounded eye aiming in Head-local space. Symbolic targets are explicit approximations."""
     mode=rules.get('gaze_mode','source')
     if mode=='source':
         return {},dict(events=len(events),mode=mode,applied_event_gaze=False,
@@ -128,28 +164,41 @@ def bake_gaze(events,model,world_positions,bone_tracks,all_actors,camera_positio
     if mode!='approximate':raise ValueError('gaze_mode 必须是 source 或 approximate')
     if not events:return {},dict(events=0,mode=mode)
     names={b.name:i for i,b in enumerate(model.bones)}
-    count=len(world_positions[names['頭']]);times=np.arange(count)/30*rules['expression_fps']
-    head=world_positions[names['頭']]
-    choices={};unknown=collections.Counter()
-    defaults={'CenterUp':[0,2,-5],'CenterMiddle':[0,0,-5],'CenterDown':[0,-2,-5],
-              'LeftUp':[3,2,-5],'LeftMiddle':[3,0,-5],'LeftDown':[3,-2,-5],
-              'RightUp':[-3,2,-5],'RightMiddle':[-3,0,-5],'RightDown':[-3,-2,-5],
-              'BackUp':[0,2,5],'BackDown':[0,-2,5],
-              'HalfLeftDown':[1.5,-2,-5],'HalfLeftMiddle':[1.5,0,-5],
-              'HalfRightDown':[-1.5,-2,-5],'HalfRightMiddle':[-1.5,0,-5]}
-    for name,offset in defaults.items():choices[name]=head+np.asarray(offset)*rules['units_per_meter']
-    if camera_positions is not None:choices['Camera']=camera_positions
+    head_idx=names['頭']
+    count=len(world_positions[head_idx]);fps60=float(rules['expression_fps'])
+    times=np.arange(count)/30.0*fps60
+    max_yaw_deg=12.0;max_pitch_up_deg=7.0;max_pitch_down_deg=8.0
+    default_neg_frames=6.0
+    min_conv_dist=1.5*float(rules['units_per_meter'])
+    # Head-relative angular offsets (yaw +X=left deg, pitch +Y=up deg) so
+    # directional cues rotate naturally with the character's head.
+    dir_presets={
+        'CenterUp':(0.0,max_pitch_up_deg),
+        'CenterMiddle':(0.0,0.0),
+        'CenterDown':(0.0,-max_pitch_down_deg),
+        'LeftUp':(max_yaw_deg,max_pitch_up_deg),
+        'LeftMiddle':(max_yaw_deg,0.0),
+        'LeftDown':(max_yaw_deg,-max_pitch_down_deg),
+        'RightUp':(-max_yaw_deg,max_pitch_up_deg),
+        'RightMiddle':(-max_yaw_deg,0.0),
+        'RightDown':(-max_yaw_deg,-max_pitch_down_deg),
+        'HalfLeftUp':(0.5*max_yaw_deg,0.6*max_pitch_up_deg),
+        'HalfLeftMiddle':(0.5*max_yaw_deg,0.0),
+        'HalfLeftDown':(0.5*max_yaw_deg,-0.6*max_pitch_down_deg),
+        'HalfRightUp':(-0.5*max_yaw_deg,0.6*max_pitch_up_deg),
+        'HalfRightMiddle':(-0.5*max_yaw_deg,0.0),
+        'HalfRightDown':(-0.5*max_yaw_deg,-0.6*max_pitch_down_deg),
+        'BackUp':(0.0,0.5*max_pitch_up_deg),
+        'BackMiddle':(0.0,0.0),
+        'BackDown':(0.0,-0.5*max_pitch_down_deg),
+    }
+    world_choices={}
+    if camera_positions is not None:world_choices['Camera']=np.asarray(camera_positions,dtype=float)
     for source,target in [('LeftHand','左手首'),('RightHand','右手首')]:
-        if target in names:choices[source]=world_positions[names[target]]
-    for slot,pos in all_actors.items():choices[f'Character{slot:02d}']=pos
-    for name,target in rules['eye_targets'].items():choices[name]=np.tile(target,(count,1))
-    target=choices['CenterMiddle'].copy()
-    for e in events:
-        name=e['arg1'];start=float(e['startFrame']);duration=max(0,float(e.get('arg2') or 0))
-        if name not in choices:unknown[name]+=1;continue
-        mask=times>=start; previous=target[min(int(start*30/rules['expression_fps']),count-1)].copy()
-        alpha=np.clip((times-start)/max(duration,1e-8),0,1)[:,None]
-        target[mask]=(previous+(choices[name]-previous)*alpha)[mask]
+        if target in names:world_choices[source]=np.asarray(world_positions[names[target]],dtype=float)
+    for slot,pos in all_actors.items():world_choices[f'Character{slot:02d}']=np.asarray(pos,dtype=float)
+    for name,target in rules['eye_targets'].items():world_choices[name]=np.tile(target,(count,1))
+
     # Evaluate head global deformation from saved local rotations through the
     # ancestor chain. All inherited controls on this path are identity.
     from .retarget import topology
@@ -163,19 +212,61 @@ def bake_gaze(events,model,world_positions,bone_tracks,all_actors,camera_positio
             index=np.clip(np.searchsorted(fs,np.arange(count),side='right')-1,0,len(fs)-1)
             local=vs[index,3:]
         global_rot[i]=mul(parent,local)
-    result={}; frames=np.arange(count,dtype=np.uint32);clamped=0
+    head_rot=global_rot[head_idx]
+    eye_indices=[names[n] for n in ('左目','右目') if n in names]
+    mid_eye_pos=(0.5*(world_positions[eye_indices[0]]+world_positions[eye_indices[1]])
+                 if len(eye_indices)==2 else
+                 world_positions[eye_indices[0]] if eye_indices else world_positions[head_idx])
+
+    ordered_events=sorted(enumerate(events),key=lambda x:(float(x[1]['startFrame']),x[0]))
+    unknown=collections.Counter()
+    for _,e in ordered_events:
+        tname=str(e.get('arg1') or '')
+        if tname not in dir_presets and tname not in world_choices:
+            unknown[tname]+=1
+
+    result={};frames=np.arange(count,dtype=np.uint32);clamped=0
     for name in ('左目','右目'):
         if name not in names:continue
-        i=names[name];parent=global_rot[model.bones[i].parent]
-        direction=unit(rotate(inv(parent),target-world_positions[i]))
-        qs=[]
-        for d in direction:
-            q=between([0.,0,-1.],d);angle=2*np.arccos(np.clip(abs(q[3]),0,1))
-            limit=np.deg2rad(25)
-            if angle>limit:
-                q=np.r_[unit(q[:3])*np.sin(limit/2),np.cos(limit/2)];clamped+=1
-            qs.append(q)
-        values=np.c_[np.zeros((count,3)),continuous(qs)]
+        eye_idx=names[name]
+        eye_pos=world_positions[eye_idx]
+        aim_cache={}
+        for wname,wpos in world_choices.items():
+            ty,tp,c=_aim_world_target(
+                eye_pos,mid_eye_pos,head_rot,wpos,
+                max_yaw_deg,max_pitch_up_deg,max_pitch_down_deg,min_conv_dist,
+            )
+            aim_cache[wname]=(ty,tp)
+            clamped+=c
+        cur_yaw=np.zeros(count,dtype=float)
+        cur_pitch=np.zeros(count,dtype=float)
+        for _,e in ordered_events:
+            tname=str(e.get('arg1') or '')
+            start=float(e['startFrame'])
+            raw_arg2=float(e.get('arg2')) if e.get('arg2') not in (None,'') else -1.0
+            duration=default_neg_frames if raw_arg2<0 else raw_arg2
+            if tname in dir_presets:
+                tgt_y,tgt_p=dir_presets[tname]
+                tgt_y=np.full(count,tgt_y,dtype=float)
+                tgt_p=np.full(count,tgt_p,dtype=float)
+            elif tname in aim_cache:
+                tgt_y,tgt_p=aim_cache[tname]
+            else:
+                # Unresolved stage target (e.g. Target2) safely returns gaze to neutral.
+                tgt_y=np.zeros(count,dtype=float);tgt_p=np.zeros(count,dtype=float)
+            mask=times>=start
+            if not np.any(mask):continue
+            idx0=min(int(round(start*30.0/fps60)),count-1)
+            prev_y=cur_yaw[idx0];prev_p=cur_pitch[idx0]
+            if duration<=0:
+                alpha=np.ones(count,dtype=float)
+            else:
+                u=np.clip((times-start)/duration,0.0,1.0)
+                alpha=u*u*(3.0-2.0*u)
+            cur_yaw[mask]=(prev_y+(tgt_y-prev_y)*alpha)[mask]
+            cur_pitch[mask]=(prev_p+(tgt_p-prev_p)*alpha)[mask]
+        q=continuous(_yaw_pitch_to_quat(cur_yaw,cur_pitch))
+        values=np.c_[np.zeros((count,3)),q]
         keep=stable_indices(values);result[name]=(frames[keep],values[keep])
     return result,dict(events=len(events),mode=mode,unknown_targets=dict(unknown),clamped_eye_frames=clamped,
-                       policy='bounded geometric eye aiming; symbolic directions and linear target transitions are compatibility approximations')
+                       policy='head-relative bounded eye aiming with behind-head fade, near-distance convergence guard, and smoothstep ChangeTarget transitions')

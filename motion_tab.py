@@ -103,6 +103,9 @@ class MotionTab(ttk.Frame):
             )
             self.pmx = tk.StringVar(value=str(state.get("motion_pmx", "") or ""))
             self.rules = tk.StringVar(value=str(state.get("motion_rules", "") or ""))
+            self.gaze_approx = tk.BooleanVar(
+                value=bool(state.get("motion_gaze_approx", True))
+            )
         else:
             try:
                 state = _read_json(self.settings_path) if self.settings_path.is_file() else {}
@@ -112,6 +115,7 @@ class MotionTab(ttk.Frame):
             self.output = tk.StringVar(value=str(state.get("output") or fallback_output))
             self.pmx = tk.StringVar(value=str(state.get("pmx", "") or ""))
             self.rules = tk.StringVar(value=str(state.get("rules", "") or ""))
+            self.gaze_approx = tk.BooleanVar(value=bool(state.get("gaze_approx", True)))
 
         self.status = tk.StringVar(value="就绪")
         self.controls: list[Any] = []
@@ -153,6 +157,17 @@ class MotionTab(ttk.Frame):
             )
             button.grid(row=row, column=2, padx=(10, 0), pady=4)
             self.controls.extend((entry, button))
+
+        ttk.Label(form, text="视线还原", style="FieldLabel.TLabel").grid(
+            row=5, column=0, sticky="w", padx=(0, 12), pady=(6, 2)
+        )
+        gaze_check = ttk.Checkbutton(
+            form,
+            text="近似还原视线（根据 ChangeTarget 追踪镜头 / 目标）",
+            variable=self.gaze_approx,
+        )
+        gaze_check.grid(row=5, column=1, columnspan=2, sticky="w", pady=(6, 2))
+        self.controls.append(gaze_check)
 
         bottom_card = _create_card(self)
         bottom_card._card_outer.pack(side="bottom", fill="x", padx=18, pady=(0, 14))  # type: ignore[attr-defined]
@@ -248,12 +263,13 @@ class MotionTab(ttk.Frame):
         )
         self.log.pack(fill="both", expand=True)
 
-    def read_settings(self) -> dict[str, str]:
+    def read_settings(self) -> dict[str, Any]:
         return {
             "motion_task": self.task.get(),
             "motion_output": self.output.get(),
             "motion_pmx": self.pmx.get(),
             "motion_rules": self.rules.get(),
+            "motion_gaze_approx": bool(self.gaze_approx.get()),
         }
 
     def _save_state(self) -> None:
@@ -262,10 +278,9 @@ class MotionTab(ttk.Frame):
             if self._save_callback is not None:
                 self._save_callback()
             return
-        _write_json(
-            self.settings_path,
-            {k: getattr(self, k).get() for k in ("task", "output", "pmx", "rules")},
-        )
+        state = {k: getattr(self, k).get() for k in ("task", "output", "pmx", "rules")}
+        state["gaze_approx"] = bool(self.gaze_approx.get())
+        _write_json(self.settings_path, state)
 
     def browse(self, var: tk.StringVar, kind: str) -> None:
         if kind == "dir":
@@ -373,6 +388,7 @@ class MotionTab(ttk.Frame):
             target_pmx=targets,
             rules_path=self.rules.get() or None,
             slots=slots,
+            gaze_mode=("approximate" if self.gaze_approx.get() else "source"),
         )
         try:
             self._save_state()

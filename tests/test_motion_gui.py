@@ -96,10 +96,32 @@ class MotionGuiIntegrationTests(unittest.TestCase):
 
                     err.assert_not_called()
                     self.assertEqual(captured["target_pmx"], {1: None, 2: None})
+                    self.assertEqual(captured["gaze_mode"], "approximate")
                     self.assertNotIn("backend_path", captured)
                     saved = studio_gui.load_studio_settings(settings_file)
                     self.assertEqual(saved.get("motion_task"), tmp)
                     self.assertEqual(saved.get("motion_output"), tmp)
+                    self.assertTrue(saved.get("motion_gaze_approx"))
+                    with patch("motion_tab.messagebox.showinfo"):
+                        app.motion_tab.poll()
+                    self.assertFalse(app.motion_tab.running)
+
+                    with patch("motion_tab.build_task", side_effect=fake_build), patch(
+                        "motion_tab.threading.Thread"
+                    ) as th, patch("motion_tab.messagebox.showerror") as err2, patch(
+                        "motion_tab.messagebox.showinfo"
+                    ):
+                        th.side_effect = lambda *_a, target, daemon=None, **_kw: type(
+                            "T", (), {"start": lambda self: target()}
+                        )()
+                        app.motion_tab.task.set(tmp)
+                        app.motion_tab.gaze_approx.set(False)
+                        app.motion_tab.build()
+                        app.motion_tab.poll()
+                    err2.assert_not_called()
+                    self.assertEqual(captured["gaze_mode"], "source")
+                    saved2 = studio_gui.load_studio_settings(settings_file)
+                    self.assertFalse(saved2.get("motion_gaze_approx"))
 
                     # Empty task directory should report cleanly instead of inspecting CWD.
                     with patch("motion_tab.messagebox.showinfo"):

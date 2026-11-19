@@ -137,6 +137,58 @@ class CoreTests(unittest.TestCase):
             p=Path(t)/'bad_gaze.json';p.write_text('{"gaze_mode":"force"}')
             with self.assertRaises(ValueError):load_rules(p)
 
+    def test_bake_gaze_head_relative_directions_behind_fade_and_conv_guard(self):
+        from scsp_motion.math3d import rotate
+        rules=load_rules();rules['gaze_mode']='approximate'
+        model=pmx_io.Model()
+        for name,parent,pos in [('頭',-1,[0,10,0]),('左目',0,[0.5,10.5,-0.2]),('右目',0,[-0.5,10.5,-0.2]),('左手首',-1,[0.5,10.5,-1.5])]:
+            b=pmx_io.Bone();b.name=name;b.parent=parent;b.location=pos;model.bones.append(b)
+        # Rotate head -90 deg around Y (now facing +X); cam at [-50, 10.5, 0] is directly behind head!
+        q_head_90=np.array([0.,-np.sin(np.pi/4),0.,np.cos(np.pi/4)])
+        bone_tracks={'頭':(np.array([0,1,2,3],dtype=np.uint32),np.tile(np.r_[0.,0.,0.,q_head_90],(4,1)))}
+        world={
+            0:np.tile([0,10.,0],(4,1)),
+            1:np.tile([0.2,10.5,0.5],(4,1)),
+            2:np.tile([0.2,10.5,-0.5],(4,1)),
+            3:np.tile([1.5,10.5,0.0],(4,1)), # 1.3m in front along rotated head +X, closer than 1.5m min_conv_dist!
+        }
+        # Camera directly behind rotated head (-X) -> fade to 0!
+        cam=np.tile([-50.,10.5,0.],(4,1))
+        events=[
+            dict(eventName='ChangeTarget',startFrame=0,arg1='CenterMiddle',arg2='0'),
+            dict(eventName='ChangeTarget',startFrame=2,arg1='LeftMiddle',arg2='0'),
+            dict(eventName='ChangeTarget',startFrame=4,arg1='BackMiddle',arg2='0'),
+            dict(eventName='ChangeTarget',startFrame=6,arg1='Camera',arg2='0'),
+        ]
+        tracks,report=bake_gaze(events,model,world,bone_tracks,{},cam,rules)
+        def eval_track(name,f):
+            fs,vs=tracks[name]
+            idx=int(np.searchsorted(fs,f,side='right')-1)
+            return vs[max(0,idx),3:]
+        # Frame 0: CenterMiddle stays neutral even when head is turned 90 deg
+        np.testing.assert_allclose(rotate(eval_track('左目',0),[0.,0.,-1.]),[0.,0.,-1.],atol=1e-6)
+        # Frame 1 (60fps frame 2): LeftMiddle looks toward +X (Head local left) within 12 deg!
+        d_left=rotate(eval_track('左目',1),[0.,0.,-1.])
+        self.assertGreater(d_left[0],0.15)
+        self.assertLess(abs(d_left[1]),1e-6)
+        # Frame 2 (60fps frame 4): BackMiddle returns to neutral instead of flipping!
+        np.testing.assert_allclose(rotate(eval_track('左目',2),[0.,0.,-1.]),[0.,0.,-1.],atol=1e-6)
+        # Frame 3 (60fps frame 6): Behind-head Camera fades smoothly to neutral!
+        np.testing.assert_allclose(rotate(eval_track('左目',3),[0.,0.,-1.]),[0.,0.,-1.],atol=1e-6)
+        # Unresolved Target2 + arg2=-1 smooth transition + LeftHand convergence guard
+        events2=[
+            dict(eventName='ChangeTarget',startFrame=0,arg1='HalfLeftUp',arg2='0'),
+            dict(eventName='ChangeTarget',startFrame=2,arg1='Target2',arg2='-1'),
+        ]
+        tracks2,report2=bake_gaze(events2,model,world,bone_tracks,{},cam,rules)
+        self.assertEqual(report2['unknown_targets'],{'Target2':1})
+        self.assertIn('左目',tracks2)
+        # Verify close LeftHand doesn't cross eyes (左目 and 右目 agree on direction!)
+        tracks_hand,_=bake_gaze([dict(eventName='ChangeTarget',startFrame=0,arg1='LeftHand',arg2='0')],model,world,bone_tracks,{},cam,rules)
+        dl_h=rotate(tracks_hand['左目'][1][0,3:],[0.,0.,-1.])
+        dr_h=rotate(tracks_hand['右目'][1][0,3:],[0.,0.,-1.])
+        self.assertLess(np.linalg.norm(dl_h-dr_h),0.06)
+
     def test_camera_offset_rotate_transition_and_actor_anchor_fallback(self):
         with tempfile.TemporaryDirectory() as t:
             p=Path(t)/'camera.json'

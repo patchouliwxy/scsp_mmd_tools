@@ -21,7 +21,7 @@ from scsp_motion import vmd
 
 
 def build_task(task_dir,output_root,*,backend_path=None,target_pmx=None,rules_path=None,
-               slots=None,progress=None,backend=None):
+               slots=None,gaze_mode=None,progress=None,backend=None):
     """target_pmx: None (generic), one PMX path, or {slot: PMX|None}. Returns schema-1 JSON report.
 
     A caller may provide a backend object with model, identity, calibrate(work)
@@ -29,6 +29,10 @@ def build_task(task_dir,output_root,*,backend_path=None,target_pmx=None,rules_pa
     progress follows scsp_mmd_tools: callback(percent=int, message=str).
     """
     info=inspect_task(task_dir);rules=load_rules(rules_path)
+    if gaze_mode is not None:
+        if gaze_mode not in ('source','approximate'):
+            raise ValueError('gaze_mode 必须是 source 或 approximate')
+        rules['gaze_mode']=gaze_mode
     backend=backend or (PoseWorkerBackend(backend_path) if (backend_path and str(backend_path).strip()) else BuiltinPoseBackend())
     selected=set(slots or [s['slot'] for s in info['slots']])
     if not selected<=set(s['slot'] for s in info['slots']):raise ValueError('选择了不存在的站位')
@@ -185,7 +189,7 @@ def main(argv=None):
     p=sub.add_parser('build');p.add_argument('task');p.add_argument('--output',required=True)
     p.add_argument('--backend',required=False,default='',help='下载器目录或 PoseWorker 目录；省略时使用内置解算器')
     p.add_argument('--pmx',action='append',required=False,help='目标 PMX，或 站位=PMX；可多次指定，省略时按内置通用 MMD 骨架导出')
-    p.add_argument('--rules');p.add_argument('--slot',type=int,action='append');p.add_argument('--report')
+    p.add_argument('--rules');p.add_argument('--slot',type=int,action='append');p.add_argument('--gaze-mode',choices=['source','approximate']);p.add_argument('--report')
     p=sub.add_parser('inspect-vmd');p.add_argument('path')
     args=parser.parse_args(argv)
     if args.command=='inspect':result=inspect_task(args.task)
@@ -194,7 +198,7 @@ def main(argv=None):
         if not args.pmx:pmx=None
         elif len(args.pmx)==1 and '=' not in args.pmx[0]:pmx=args.pmx[0]
         else:pmx={int(s.split('=',1)[0]):(s.split('=',1)[1] or None) for s in args.pmx}
-        result=build_task(args.task,args.output,backend_path=args.backend,target_pmx=pmx,rules_path=args.rules,slots=args.slot,
+        result=build_task(args.task,args.output,backend_path=args.backend,target_pmx=pmx,rules_path=args.rules,slots=args.slot,gaze_mode=args.gaze_mode,
                           progress=lambda **v:print(json.dumps(v,ensure_ascii=False),flush=True))
         if args.report:write_json(args.report,result)
         result={k:result[k] for k in ('status','output_dir','validation')}
