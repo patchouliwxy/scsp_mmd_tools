@@ -151,20 +151,8 @@ _EYE_PARTS_MAT_PREFIXES = ("m_eyelash_", "m_eyebrow_", "m_faceline_", "m_mouthli
 _EYE_PARTS_TARGET_PREFIXES = ("m_eyelash", "m_eyebrow", "m_faceline", "m_mouthline")
 
 
-def _has_material_holder_ancestor(obj):
-    parent = getattr(obj, "parent", None)
-    while parent is not None:
-        if (
-            "materialholder" in str(getattr(parent, "name", "")).casefold()
-            or "materialholder" in _source_name(parent).casefold()
-        ):
-            return True
-        parent = getattr(parent, "parent", None)
-    return False
-
-
 def _accessory_card_kind(obj):
-    """Identify non-head material-override carrier cards ('face', 'eyeparts', or 'eyebrow')."""
+    """Identify accessory material-override carrier cards ('face' or 'eyeparts')."""
     if obj.type != "MESH":
         return None
     names = {_source_name(obj).casefold()}
@@ -177,26 +165,18 @@ def _accessory_card_kind(obj):
         except (TypeError, ValueError):
             pass
     path = str(obj.get("scsp_source_fbx", "")).replace("\\", "/").lower()
-    low_name = obj.name.lower()
-    is_head = (
-        obj.get("scsp_merged_part") == "head"
-        or "_head__" in low_name
-        or "/m_head_" in path
-    )
     accessory = (
         obj.get("scsp_merged_part") == "acce"
-        or "_acce__" in low_name
+        or "_acce__" in obj.name.lower()
         or "/m_acce_" in path
     )
-    in_holder = (not is_head) and _has_material_holder_ancestor(obj)
-    if not accessory and not in_holder:
+    if not accessory:
         return None
 
     wants_face = "m_face" in names
-    wants_eyebrow_only = (not accessory) and ("m_eyebrow" in names)
-    wants_eyeparts = (not wants_eyebrow_only) and bool(names & _EYE_PARTS_CARD_NAMES)
+    wants_eyeparts = bool(names & _EYE_PARTS_CARD_NAMES)
     is_geom_dup = bool(obj.get("scsp_duplicate_head_target"))
-    if not wants_face and not wants_eyeparts and not wants_eyebrow_only and not is_geom_dup:
+    if not wants_face and not wants_eyeparts and not is_geom_dup:
         return None
 
     for material in obj.data.materials:
@@ -205,16 +185,6 @@ def _accessory_card_kind(obj):
         mat_low = material.name.lower()
         if (wants_face or is_geom_dup) and mat_low.startswith("m_face"):
             return "face"
-        if wants_eyebrow_only and (
-            mat_low.startswith("m_eyebrow")
-            or any(
-                node.type == "TEX_IMAGE"
-                and node.image
-                and ("_eyeparts_" in node.image.name.lower() or "_eyebrow" in node.image.name.lower())
-                for node in (material.node_tree.nodes if material.node_tree else ())
-            )
-        ):
-            return "eyebrow"
         if (wants_eyeparts or is_geom_dup) and (
             mat_low.startswith(_EYE_PARTS_MAT_PREFIXES)
             or (is_geom_dup and mat_low.startswith(_EYE_PARTS_TARGET_PREFIXES))
@@ -243,12 +213,8 @@ def _helper_reason(obj):
         return "accessory_face_texture_card"
     if card_kind == "eyeparts":
         return "accessory_eyeparts_texture_card"
-    if card_kind == "eyebrow":
-        return "eyebrow_texture_card"
     if obj.get("scsp_duplicate_head_target"):
         return "accessory_head_duplicate_overlay"
-    if _has_material_holder_ancestor(obj):
-        return "material_holder"
     source = _source_name(obj).casefold()
     name = obj.name.casefold()
     candidates = {source, name}
@@ -985,10 +951,9 @@ def _mark_accessory_head_duplicates(plan):
 
 
 def _apply_accessory_face_makeup(plan, report):
-    """Transfer non-head face/eyeparts/eyebrow makeup textures onto main head materials."""
+    """Transfer accessory face/eyeparts makeup textures onto main head materials."""
     face_carriers = []
     eyeparts_carriers = []
-    eyebrow_carriers = []
     seen_carriers = set()
     head_face_meshes = []
     head_non_helper_meshes = []
@@ -1007,10 +972,6 @@ def _apply_accessory_face_makeup(plan, report):
                 if ptr not in seen_carriers:
                     seen_carriers.add(ptr)
                     eyeparts_carriers.append(mesh)
-            elif card_kind == "eyebrow":
-                if ptr not in seen_carriers:
-                    seen_carriers.add(ptr)
-                    eyebrow_carriers.append(mesh)
             elif kind_cf == "head" and _helper_reason(mesh) is None:
                 if ptr not in seen_targets:
                     seen_targets.add(ptr)
@@ -1040,14 +1001,6 @@ def _apply_accessory_face_makeup(plan, report):
         head_non_helper_meshes,
         _is_eyeparts_slot,
         kind_label="eyeparts",
-    )
-    _transfer_accessory_texture(
-        plan,
-        report,
-        eyebrow_carriers,
-        head_non_helper_meshes,
-        lambda slot, _mesh: slot.material.name.lower().startswith("m_eyebrow"),
-        kind_label="eyebrow",
     )
 
 
