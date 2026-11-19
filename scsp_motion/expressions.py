@@ -149,8 +149,9 @@ def _aim_world_target(eye_world_pos, mid_eye_pos, head_rot, target_world_pos,
         | (raw_pitch < -max_pitch_down_deg)
         | (theta_deg > fade_start_deg)
     ))
-    yaw = np.clip(raw_yaw, -max_yaw_deg, max_yaw_deg) * fade
-    pitch = np.clip(raw_pitch, -max_pitch_down_deg, max_pitch_up_deg) * fade
+    yaw = max_yaw_deg * np.tanh(raw_yaw / 30.0) * fade
+    pitch_lim = np.where(raw_pitch >= 0.0, max_pitch_up_deg, max_pitch_down_deg)
+    pitch = pitch_lim * np.tanh(raw_pitch / 25.0) * fade
     return yaw, pitch, clamped
 
 
@@ -167,7 +168,9 @@ def bake_gaze(events,model,world_positions,bone_tracks,all_actors,camera_positio
     head_idx=names['頭']
     count=len(world_positions[head_idx]);fps60=float(rules['expression_fps'])
     times=np.arange(count)/30.0*fps60
-    max_yaw_deg=12.0;max_pitch_up_deg=7.0;max_pitch_down_deg=8.0
+    max_yaw_deg=float(rules.get('gaze_max_yaw_deg',5.5))
+    max_pitch_up_deg=float(rules.get('gaze_max_pitch_up_deg',3.0))
+    max_pitch_down_deg=float(rules.get('gaze_max_pitch_down_deg',3.5))
     default_neg_frames=6.0
     min_conv_dist=1.5*float(rules['units_per_meter'])
     # Head-relative angular offsets (yaw +X=left deg, pitch +Y=up deg) so

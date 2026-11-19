@@ -167,9 +167,10 @@ class CoreTests(unittest.TestCase):
             return vs[max(0,idx),3:]
         # Frame 0: CenterMiddle stays neutral even when head is turned 90 deg
         np.testing.assert_allclose(rotate(eval_track('左目',0),[0.,0.,-1.]),[0.,0.,-1.],atol=1e-6)
-        # Frame 1 (60fps frame 2): LeftMiddle looks toward +X (Head local left) within 12 deg!
+        # Frame 1 (60fps frame 2): LeftMiddle looks toward +X (Head local left) within safe 5.5 deg anime bound!
         d_left=rotate(eval_track('左目',1),[0.,0.,-1.])
-        self.assertGreater(d_left[0],0.15)
+        self.assertGreater(d_left[0],0.08)
+        self.assertLess(d_left[0],0.12)
         self.assertLess(abs(d_left[1]),1e-6)
         # Frame 2 (60fps frame 4): BackMiddle returns to neutral instead of flipping!
         np.testing.assert_allclose(rotate(eval_track('左目',2),[0.,0.,-1.]),[0.,0.,-1.],atol=1e-6)

@@ -45,5 +45,9 @@ def load_rules(path=None):
     if not isinstance(rules['camera_shooting_offsets'],dict) or any(v is not None and not _valid_offset_vec(v) for v in rules['camera_shooting_offsets'].values()):
         raise ValueError('camera_shooting_offsets 的每个值必须是 null 或 3 个有限数值')
     if rules['gaze_mode'] not in ('source','approximate'):raise ValueError('gaze_mode 必须是 source 或 approximate')
+    for gk in ('gaze_max_yaw_deg','gaze_max_pitch_up_deg','gaze_max_pitch_down_deg'):
+        gv=rules[gk]
+        if not isinstance(gv,(int,float)) or isinstance(gv,bool) or not math.isfinite(gv) or not 0<=gv<=30:
+            raise ValueError(f'{gk} 必须是 0..30 之间的有限数值')
     if rules['duration_policy'] not in ('hold','strict'):raise ValueError('duration_policy 必须是 hold 或 strict')
     return rules
