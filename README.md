@@ -26,7 +26,7 @@
 启动 `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` 后可通过顶部切换栏在 **「角色 PMX」** 与 **「动作 VMD」** 两个独立页面之间切换（两页状态、队列与输出互不干扰，配置均自动持久化到 `studio_settings.json`）：
 
 ### 角色 PMX 页
-1. 选择 Blender 可执行文件与输出目录（窗口顶部状态栏会实时显示探测到的 Blender 版本及内置 `ufbx FBX` / `PMX IO` 状态；工作区右侧提供可选全局复选框 **`保留 bust_up 形态键`**，默认关闭，开启后在保留角色胸围烘焙的基础上保留 `bust_up` 滑块，默认 `0` 可调至 `1`）。
+1. 选择 Blender 可执行文件与输出目录（窗口顶部状态栏会实时显示探测到的 Blender 版本及内置 `ufbx FBX` / `PMX IO` 状态；右侧提供可选复选框 **`保留 bust_up 形态键`**，默认关闭）。
 2. 添加一个或多个下载任务目录：
    - **单项制作**：制作当前选中任务；**批量制作**：依次处理队列并在单项失败后继续下一项；**当前完成后停止**不会中断正在处理的模型。
    - 右侧详情支持设置可选**手工角色名**与多行 **PMX 说明**（默认留空，留空则不写入 PMX 说明；支持 `{name}`、`{romanized}`、`{id}`、`{character_id}` 占位符，可点“应用到选中 / 应用到全部 / 设为默认”保存到 `studio_settings.json`）。
@@ -88,13 +88,12 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1 -Python <python路径>
 
 ### v0.2.2 Preview (2026-11-23)
 
-- **新增 `保留 bust_up 形态键` 选项**：在「角色 PMX」页全局配置与 CLI（`--preserve-bust-morph`）新增可选开关（默认关闭），开启时在保留角色胸围烘焙至静息几何与自定义法线的基础上保留统一 `bust_up` 形态键（默认 `0`，可调范围 `0~1` 补足到游戏上限），并持久化到 `studio_settings.json`。
-- **文档同步**：`Tools/pe_physics.py` 原生物理脚本明确标为暂缓待做状态。
+- 新增「保留 `bust_up` 形态键」选项（默认关闭）。
 
 ### v0.2.1 Preview (2026-11-19)
 
-- **近似视线还原**：在动作 VMD 转换中支持基于 `ChangeTarget` 的头部局部空间近似视线追踪（含镜头、`LeftHand`/`RightHand`、`CharacterXX` 跨角色注视、防斗鸡眼、脑后渐隐、全站位求解与 `5.5°/3.0°/3.5°` + `tanh` 平滑限制），并在「动作 VMD」页提供开关。
-- **占位面片与眉毛通道修复**：自动识别并隐藏 `MaterialHolder` 父链下的占位网格与附属 `M_eyebrow` 替换卡，并将替换眉毛贴图转嫁至头部主材质。
+- 新增动作近似视线开关。
+- 修复 `MaterialHolder` 占位面片与眉毛贴图显示问题。
 
 ### v0.2.0 Preview (2026-11-18)
 

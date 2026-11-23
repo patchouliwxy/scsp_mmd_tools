@@ -30,7 +30,7 @@ Folders do **not** strictly have to come from the downloader (`job.json` and `ma
 Launch `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` (or run `python studio_gui.py` from source) and use the top tab switcher to move between **角色 PMX** (Character PMX) and **动作 VMD** (Motion VMD), each keeping independent state while persisting settings to `studio_settings.json`:
 
 ### Character PMX Tab
-1. Select the Blender executable and output root directory (top status badges live-check the detected Blender version plus built-in `ufbx FBX` and `PMX IO` readiness; the header also offers an optional **`保留 bust_up 形态键`** toggle—off by default—to preserve a unified `bust_up` morph from the character's baked size up to game max `1.0`).
+1. Select the Blender executable and output root directory (top status badges live-check the detected Blender version plus built-in `ufbx FBX` and `PMX IO` readiness; the header also offers an optional **`保留 bust_up 形态键`** toggle, off by default).
 2. Add one or more task folders to the queue:
    - **Single Build / Batch Build**: processes either the active item or the whole queue sequentially (continuing past individual failures); **Stop After Current** finishes the running model cleanly before stopping.
    - **Per-Task Overrides**: configure optional custom model names and multi-line **PMX comments** (blank by default — when blank, no forced template text is injected; supports `{name}`, `{romanized}`, `{id}`, and `{character_id}` placeholders, plus **Apply to Selected / Apply to All / Save as Default** persisted to `studio_settings.json`).
@@ -91,12 +91,12 @@ Output is written to `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` (preserving ex
 
 ### v0.2.2 Preview (2026-11-23)
 
-- **Optional `bust_up` Morph Preservation**: added a global GUI toggle (`保留 bust_up 形态键`, off by default, persisted to `studio_settings.json`) and CLI flag `--preserve-bust-morph` that keeps a unified `bust_up` slider (`0.0` default = character's baked bust size, `0 ~ 1` adjustable up to game max `1.0`).
-- **Physics Status Note**: explicitly marked experimental `Tools/pe_physics.py` as TODO / paused in documentation.
+- Added optional **`保留 bust_up 形态键`** toggle (`--preserve-bust-morph`, off by default).
 
 ### v0.2.1 Preview (2026-11-19)
 
-- **Approximate Gaze Aiming & Helper Cleanup**: added head-relative approximate gaze aiming (`ChangeTarget` camera / hands / cross-character targets, `5.5°/3.0°/3.5°` clamp & `tanh` smoothing) with a Motion VMD tab toggle, plus automatic hiding of `MaterialHolder` placeholder cards and eyebrow card transfer.
+- Added approximate gaze toggle for motion conversion.
+- Fixed `MaterialHolder` placeholder card cleanup and eyebrow card handling.
 
 ### v0.2.0 Preview (2026-11-18)
 
