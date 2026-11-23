@@ -125,6 +125,7 @@ class BuildJob:
     task_dir: Path
     name_override: str
     comment: str
+    preserve_bust_morph: bool = False
 
 
 def _single_line(value: object, fallback: str = "—") -> str:
@@ -330,6 +331,9 @@ class StudioGui:
         self._default_comment = str(
             self._settings.get("default_pmx_comment", "") or ""
         )
+        self.preserve_bust_morph_var = tk.BooleanVar(
+            value=bool(self._settings.get("preserve_bust_morph", False))
+        )
 
         self.blender_var = tk.StringVar(value=DEFAULT_BLENDER)
         self.downloader_var = tk.StringVar()
@@ -369,7 +373,7 @@ class StudioGui:
         self._refresh_actions()
 
     def _configure_window(self) -> None:
-        self.root.title("scsp_mmd_tools v0.2.0 (Preview)")
+        self.root.title("scsp_mmd_tools v0.2.2 (Preview)")
         try:
             dpi = float(self.root.winfo_fpixels("1i"))
         except Exception:
@@ -709,6 +713,14 @@ class StudioGui:
             text="工作区与路径配置",
             style="Section.TLabel",
         ).pack(side="left")
+        self.preserve_bust_morph_check = ttk.Checkbutton(
+            paths_head,
+            text="保留 bust_up 形态键",
+            variable=self.preserve_bust_morph_var,
+            command=self._on_preserve_bust_changed,
+            style="Card.TCheckbutton",
+        )
+        self.preserve_bust_morph_check.pack(side="right")
 
         self.path_entries: list[ttk.Entry] = []
         self.path_buttons: list[ttk.Button] = []
@@ -1450,6 +1462,7 @@ class StudioGui:
                     task_dir=task_dir,
                     name_override=task.override_name.strip(),
                     comment=task.comment.rstrip(),
+                    preserve_bust_morph=bool(self.preserve_bust_morph_var.get()),
                 )
             )
         if not jobs:
@@ -1555,6 +1568,7 @@ class StudioGui:
                     name_override=job.name_override or None,
                     comment=job.comment,
                     progress=progress_callback,
+                    preserve_bust_morph=job.preserve_bust_morph,
                 )
                 if not isinstance(result, dict):
                     raise TypeError(
@@ -1827,8 +1841,17 @@ class StudioGui:
             return
         self._flush_comment_editor()
 
+    def _on_preserve_bust_changed(self) -> None:
+        if self._building:
+            return
+        try:
+            self._persist_settings()
+        except OSError as exc:
+            self._append_log(f"保存形态键设置失败：{exc}")
+
     def _persist_settings(self, path: Path | None = None) -> None:
         self._settings["default_pmx_comment"] = self._default_comment
+        self._settings["preserve_bust_morph"] = bool(self.preserve_bust_morph_var.get())
         if hasattr(self, "motion_tab"):
             self._settings.update(self.motion_tab.read_settings())
         save_studio_settings(self._settings, path=path)
@@ -1913,6 +1936,8 @@ class StudioGui:
             entry.configure(state="normal" if enabled else "disabled")
         for button in self.path_buttons:
             self._set_enabled(button, enabled)
+        if hasattr(self, "preserve_bust_morph_check"):
+            self._set_enabled(self.preserve_bust_morph_check, enabled)
 
     def _set_detail_editing(self, enabled: bool) -> None:
         selection = list(self.tree.selection()) if hasattr(self, "tree") else []
@@ -2224,6 +2249,7 @@ def headless_build() -> int:
     parser.add_argument("--report", required=True)
     parser.add_argument("--name-override", default=None)
     parser.add_argument("--comment", default="")
+    parser.add_argument("--preserve-bust-morph", action="store_true")
     args = parser.parse_args()
     code = 0
     try:
@@ -2233,6 +2259,7 @@ def headless_build() -> int:
             args.blender,
             name_override=args.name_override,
             comment=args.comment,
+            preserve_bust_morph=args.preserve_bust_morph,
         )
     except Exception as exc:
         result = {"status": "failed", "error": str(exc), "traceback": traceback.format_exc()}

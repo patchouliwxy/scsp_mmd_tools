@@ -255,6 +255,7 @@ def build_task(
     name_override=None,
     comment='',
     progress=None,
+    preserve_bust_morph=False,
 ):
     info = inspect_task(task_dir)
     blender = validate_blender_executable(blender_path)
@@ -300,6 +301,7 @@ def build_task(
                        'master_snapshot': str(master), 'master_snapshot_sha256': sha(master),
                        'parameters': {'height': record['heightScale'], 'head': record['headShape'],
                                       'bust': record['shape'], 'arm': .95, 'hand': .9},
+                       'preserve_bust_morph': bool(preserve_bust_morph),
                        'eye_texture_output_dir': str(work / 'eye-textures'),
                        'skin_texture_output_dir': str(work / 'skin-textures'),
                        'render_preview': False})
@@ -332,6 +334,7 @@ def build_task(
         stage('pe_core.py', ['--input', semi, '--output', final, '--phase', 'finalize'], 90, '整理表情面板与贴图目录')
         stage('audit_pe_result.py', ['--input', base, '--output', final, '--report', work/'structural-audit.json'], 96, '检查 PMX 数据与纹理完整性')
         result.update(status='completed', pmx=str(final), sha256=sha(final),
+                      preserve_bust_morph=bool(preserve_bust_morph),
                       preprocessing_report=str(prepared/'report.json'), export_report=str(work/'export-report.json'),
                       textures=[{'path': p.relative_to(out).as_posix(), 'sha256': sha(p)} for p in sorted((out/'textures').iterdir())])
         todo_note = ('\n\n待做：\n' + '\n'.join(TODO)) if TODO else ''
@@ -355,6 +358,7 @@ def main():
     parser.add_argument('--blender', type=Path, default=DEFAULT_BLENDER)
     parser.add_argument('--name-override', default=None)
     parser.add_argument('--comment', default='')
+    parser.add_argument('--preserve-bust-morph', action='store_true')
     args = parser.parse_args()
     results = []
     for task in args.tasks:
@@ -369,6 +373,7 @@ def main():
                     name_override=args.name_override,
                     comment=args.comment,
                     progress=lambda **x: print(json.dumps(x, ensure_ascii=False), flush=True),
+                    preserve_bust_morph=args.preserve_bust_morph,
                 )
             )
             results.append({'task': str(task), 'status': 'completed', 'result': value})

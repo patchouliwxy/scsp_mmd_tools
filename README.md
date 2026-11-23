@@ -1,8 +1,8 @@
-# scsp_mmd_tools (v0.2.0 Preview)
+# scsp_mmd_tools (v0.2.2 Preview)
 
 **简体中文** | [English](README.en.md)
 
-当前版本：**v0.2.0 预览版（Preview）** — 集成 **SCSP 角色建模（PMX）** 与 **歌曲动作/镜头导出（VMD）** 的桌面与命令行工具：
+当前版本：**v0.2.2 预览版（Preview）** — 集成 **SCSP 角色建模（PMX）** 与 **歌曲动作/镜头导出（VMD）** 的桌面与命令行工具：
 - **「角色 PMX」页签**：输入完整角色任务文件夹，在 Blender 后台自动生成干净无物理的 MMD 模型（`.pmx` + `textures`），**无需 Unity、PmxEditor 或第三方 Blender 插件**。
 - **「动作 VMD」页签**：输入歌曲下载任务目录，直接转换为标准 30 FPS MMD 骨骼、表情、口型、视线与镜头 `.vmd`；内置纯 Python `BuiltinPoseBackend` Humanoid 解算器，**无需外置 Unity / PoseWorker 运行时**。
 
@@ -26,7 +26,7 @@
 启动 `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` 后可通过顶部切换栏在 **「角色 PMX」** 与 **「动作 VMD」** 两个独立页面之间切换（两页状态、队列与输出互不干扰，配置均自动持久化到 `studio_settings.json`）：
 
 ### 角色 PMX 页
-1. 选择 Blender 可执行文件与输出目录（窗口顶部状态栏会实时显示探测到的 Blender 版本及内置 `ufbx FBX` / `PMX IO` 状态）。
+1. 选择 Blender 可执行文件与输出目录（窗口顶部状态栏会实时显示探测到的 Blender 版本及内置 `ufbx FBX` / `PMX IO` 状态；工作区右侧提供可选全局复选框 **`保留 bust_up 形态键`**，默认关闭，开启后在保留角色胸围烘焙的基础上保留 `bust_up` 滑块，默认 `0` 可调至 `1`）。
 2. 添加一个或多个下载任务目录：
    - **单项制作**：制作当前选中任务；**批量制作**：依次处理队列并在单项失败后继续下一项；**当前完成后停止**不会中断正在处理的模型。
    - 右侧详情支持设置可选**手工角色名**与多行 **PMX 说明**（默认留空，留空则不写入 PMX 说明；支持 `{name}`、`{romanized}`、`{id}`、`{character_id}` 占位符，可点“应用到选中 / 应用到全部 / 设为默认”保存到 `studio_settings.json`）。
@@ -45,7 +45,7 @@
 - **配饰妆容与辅助层清理**：自动将配饰携带的 `M_face` 妆容贴图转移合并至脸部主材质，移除叠层脸膜、阴影代理 `*_shadow`、`closeface`、占位块、碰撞体及 `RoomShoes` 室内鞋（普通 `Shoes` 保留）。
 - **眼睛与眼部特效**：高光静态合入主贴图并保留原始 Alpha（不恢复游戏动态 UV/高光位移）；按 Alpha 边界裁剪生成同心极坐标凹碗虹膜（`32` 径向分段 × `4` 环）并校准 1× 蛋状眼窝与球心眼骨支点（通过 `eye_hole_{L,R}` 边界映射生成，仅在遇到异常缺损眼眶时安全回退保留源几何并记录警告）。
 - **表情形态键**：清理残缺/空源键（`口開け`、`左追加睫毛`、`右追加睫毛`、`tongue_up`），包含纯几何眼部扩展（`じと目`/`瞳小`/`瞳縦潰れ`/`びっくり`/`わぉ?!`/`なごみ`/`恐ろしい子！`）、脑内隐藏贴片特效（`星目`/`はぁと`/`はちゅ目`/`はぅ`）以及完整眉部（`個性`/`にこり`/`怒り`）与口型扩展（`ワ`/`にっこり`/`にやり`/`ω`/`ω□`/`▲`/`∧`/`□`/`ん`/`口角上げ`/`口角下げ`/`口横広げ`）。
-- **体型配方与物理**：使用冻结角色主数据的身高、头型、胸围配合显式手臂 `0.95` / 手掌 `0.9` 配方（未恢复游戏原生公式）。主流程输出干净**无物理** PMX；如需原生刚体/关节物理，可对导出模型单独运行 `python Tools/pe_physics.py --input <角色.pmx> --output <物理版.pmx>`（支持 `--input-dir` / `--output-dir` 批量模式）。
+- **体型配方与物理**：使用冻结角色主数据的身高、头型、胸围配合显式手臂 `0.95` / 手掌 `0.9` 配方（未恢复游戏原生公式）。主流程输出干净**无物理** PMX；`Tools/pe_physics.py` 原生刚体/关节物理目前实机效果未达标，**暂标为待做（实验性草稿，暂缓接入）**。
 
 ## 源码运行、构建与测试
 
@@ -62,6 +62,7 @@
 # 命令行：PMX 建模
 python studio_pipeline.py inspect <任务文件夹>
 python studio_pipeline.py build <任务文件夹> --output <输出根目录> --blender <Blender路径>
+python studio_pipeline.py build <任务文件夹> --output <输出根目录> --preserve-bust-morph
 python studio_pipeline.py batch <任务1> <任务2> --output <输出根目录>
 
 # 命令行：动作 / 相机转 VMD（默认使用内置纯 Python 解算器）
@@ -84,6 +85,16 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1 -Python <python路径>
 产物将生成在 `Releases/scsp_mmd_tools/scsp_mmd_tools.exe`（同步保留既有 `Outputs`）。仓库已预编并提供 `Tools/ufbx_bridge.dll`，如需自行重编原生桥接库，可执行 `Tools/native/build_ufbx.ps1`（需 MinGW `gcc`）。
 
 ## 更新日志
+
+### v0.2.2 Preview (2026-11-23)
+
+- **新增 `保留 bust_up 形态键` 选项**：在「角色 PMX」页全局配置与 CLI（`--preserve-bust-morph`）新增可选开关（默认关闭），开启时在保留角色胸围烘焙至静息几何与自定义法线的基础上保留统一 `bust_up` 形态键（默认 `0`，可调范围 `0~1` 补足到游戏上限），并持久化到 `studio_settings.json`。
+- **文档同步**：`Tools/pe_physics.py` 原生物理脚本明确标为暂缓待做状态。
+
+### v0.2.1 Preview (2026-11-19)
+
+- **近似视线还原**：在动作 VMD 转换中支持基于 `ChangeTarget` 的头部局部空间近似视线追踪（含镜头、`LeftHand`/`RightHand`、`CharacterXX` 跨角色注视、防斗鸡眼、脑后渐隐、全站位求解与 `5.5°/3.0°/3.5°` + `tanh` 平滑限制），并在「动作 VMD」页提供开关。
+- **占位面片与眉毛通道修复**：自动识别并隐藏 `MaterialHolder` 父链下的占位网格与附属 `M_eyebrow` 替换卡，并将替换眉毛贴图转嫁至头部主材质。
 
 ### v0.2.0 Preview (2026-11-18)
 

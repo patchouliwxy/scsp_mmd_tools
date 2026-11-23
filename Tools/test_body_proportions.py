@@ -128,12 +128,14 @@ def run():
     else: raise AssertionError("bust_up driver was accepted")
     path.unlink(missing_ok=True)
     bust_bake_result = test_bake_bust()
+    preserve_bust_result = test_bake_bust_preserve_morph()
     print("SCSP_BODY_PROPORTIONS_TEST " + json.dumps({
         "status": "PASS", "blender": bpy.app.version_string, "armatures": 1,
         "meshes": 2, "static_mesh_without_modifier": True,
         "safe_shape_drivers_allowed": True, "reapply_idempotent": True,
         "reload_baseline": True, "bust_driver_rejected": bust_driver_rejected,
         "bust_bake": bust_bake_result,
+        "preserve_bust_morph": preserve_bust_result,
         "restored": restored,
     }, sort_keys=True))
 
@@ -230,6 +232,82 @@ def test_bake_bust():
             raise AssertionError("Operation succeeded after bust bake")
 
     return {"baked_count": report["baked_count"], "carrier_keys_removed": True}
+
+
+def test_bake_bust_preserve_morph():
+    from mesh_processing import merge
+
+    for obj in list(bpy.data.objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
+    root = bpy.data.objects.new("SCSP_Character", None)
+    bpy.context.scene.collection.objects.link(root)
+    rig = make_rig()
+    rig.name = "SCSP_Skeleton"
+
+    explicit = make_mesh("01_dress__Top_BS_b", rig, True, 0.0)
+    explicit["scsp_source_fbx"] = "M_Dress_test.fbx"
+    explicit["scsp_source_object"] = "Top_BS_b"
+    explicit.data.normals_split_custom_set([(0.0, 0.0, 1.0)] * len(explicit.data.loops))
+    safe = explicit.data.shape_keys.key_blocks["SafeChannel@50pct"]
+    for idx in range(len(explicit.data.vertices)):
+        safe.data[idx].co.y += 0.3
+    explicit.data.shape_keys.animation_data.drivers[0].driver.expression = "0.5"
+    # Give explicit & carrier different interpolations to verify bake_bust normalizes settings before merge.
+    explicit.data.shape_keys.key_blocks["FaceModules.bust_up"].interpolation = "KEY_BSPLINE"
+
+    carrier_data = bpy.data.meshes.new("ClothBsBData")
+    carrier_data.from_pydata([(0, 0, 0), (1, 0, 0), (0, 1, 0)], [], [(0, 1, 2)])
+    carrier_data.update()
+    carrier_data.normals_split_custom_set([(0.0, 0.0, 1.0)] * len(carrier_data.loops))
+    carrier = bpy.data.objects.new("01_dress__cloth_BS_b", carrier_data)
+    bpy.context.scene.collection.objects.link(carrier)
+    carrier["scsp_source_fbx"] = "M_Dress_test.fbx"
+    carrier["scsp_source_object"] = "cloth_BS_b"
+    group = carrier.vertex_groups.new(name="Head")
+    group.add([0, 1, 2], 1.0, "REPLACE")
+    carrier.modifiers.new("Armature", "ARMATURE").object = rig
+    carrier.shape_key_add(name="Basis", from_mix=False)
+    bs_key = carrier.shape_key_add(name="cloth_BS_b1", from_mix=False)
+    bs_key.data[0].co.z = 0.25
+
+    meshes = [explicit, carrier]
+    params = {"height": 1.01, "bust": 0.522, "head": 0.93, "arm": 0.95, "hand": 0.9}
+    initialize(root, rig, meshes, params, "synthetic bust preserve")
+
+    report = bake_bust(root, rig, meshes, preserve_bust_morph=True)
+    assert report["status"] == "baked"
+    assert report["preserve_bust_morph"] is True
+    assert report["baked_count"] == 2
+
+    for obj in meshes:
+        assert "bust_up" in obj.data.shape_keys.key_blocks
+        k = obj.data.shape_keys.key_blocks["bust_up"]
+        close(k.value, 0.0)
+        close(k.slider_min, 0.0)
+        close(k.slider_max, 1.0)
+        assert k.mute is False
+        assert k.interpolation == "KEY_LINEAR"
+        # At 0.0 (Basis), rest vertex 0 is already baked at 0.522 * 0.25 = 0.1305
+        close(obj.data.vertices[0].co.z, 0.522 * 0.25, 1e-6)
+        # At 1.0 (bust_up target), vertex 0 reaches original max 0.25 (remaining headroom = 0.478 * 0.25)
+        close(k.data[0].co.z, 0.25, 1e-6)
+
+    # Clear the test driver and reset root.scale (normally done by finalize_skeleton) before mesh_processing.merge
+    explicit.data.shape_keys.driver_remove('key_blocks["SafeChannel@50pct"].value')
+    root.scale = (1.0, 1.0, 1.0)
+    bpy.context.view_layer.update()
+    merged, _ = merge(meshes, root, rig)
+    assert len(merged) == 1
+    dress = merged[0]
+    assert "bust_up" in dress.data.shape_keys.key_blocks
+    dk = dress.data.shape_keys.key_blocks["bust_up"]
+    close(dk.value, 0.0)
+    # Vertex 0 of first piece and vertex 3 of second piece both move from 0.1305 to 0.25 when bust_up = 1.0
+    close(dress.data.vertices[0].co.z, 0.522 * 0.25, 1e-5)
+    close(dress.data.vertices[3].co.z, 0.522 * 0.25, 1e-5)
+    close(dk.data[0].co.z, 0.25, 1e-5)
+    close(dk.data[3].co.z, 0.25, 1e-5)
+    return {"baked_count": report["baked_count"], "merged_keys": list(dress.data.shape_keys.key_blocks.keys())}
 
 
 if __name__ == "__main__":

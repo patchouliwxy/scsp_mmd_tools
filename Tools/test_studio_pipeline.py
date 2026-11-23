@@ -512,6 +512,90 @@ class CommentAndGuiTests(unittest.TestCase):
             res = studio_pipeline.discover_default_blender()
             self.assertEqual(res, Path('blender'))
 
+    def test_preserve_bust_morph_checkbox_default_persistence_and_build_arg(self) -> None:
+        import tkinter as tk
+        import studio_gui
+        import studio_pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            settings_file = Path(tmp) / 'studio_settings.json'
+            with mock.patch.object(studio_gui, 'STUDIO_SETTINGS_PATH', settings_file):
+                root = tk.Tk()
+                root.withdraw()
+                app = studio_gui.StudioGui(root)
+                try:
+                    self.assertFalse(app.preserve_bust_morph_var.get())
+                    self.assertEqual(app.preserve_bust_morph_check.cget('style'), 'Card.TCheckbutton')
+                    app.preserve_bust_morph_var.set(True)
+                    app._on_preserve_bust_changed()
+                    saved = studio_gui.load_studio_settings(settings_file)
+                    self.assertTrue(saved['preserve_bust_morph'])
+                finally:
+                    app._closing = True
+                    app._inspect_jobs.put(None)
+                    root.destroy()
+
+                root2 = tk.Tk()
+                root2.withdraw()
+                app2 = studio_gui.StudioGui(root2)
+                try:
+                    self.assertTrue(app2.preserve_bust_morph_var.get())
+                    task_dir = Path(tmp) / 'task_sample'
+                    task_dir.mkdir()
+                    t1 = studio_gui.StudioTask(key='k1', task_dir=task_dir)
+                    app2._tasks['k1'] = t1
+                    captured = {}
+
+                    def fake_build(*args, **kwargs):
+                        captured['kwargs'] = kwargs
+                        return {'status': 'completed', 'pmx': str(Path(tmp) / 'out' / 'a.pmx'), 'output_dir': str(Path(tmp) / 'out')}
+
+                    fake_pipeline = type('P', (), {'build_task': staticmethod(fake_build)})()
+                    app2._load_pipeline = lambda: (fake_pipeline, None)
+                    job = studio_gui.BuildJob(
+                        task_key='k1',
+                        task_dir=task_dir,
+                        name_override='',
+                        comment='',
+                        preserve_bust_morph=bool(app2.preserve_bust_morph_var.get()),
+                    )
+                    app2._build_worker([job], Path(tmp) / 'out', Path(sys.executable), studio_gui.threading.Event())
+                    self.assertTrue(captured['kwargs']['preserve_bust_morph'])
+                finally:
+                    app2._closing = True
+                    app2._inspect_jobs.put(None)
+                    root2.destroy()
+
+            # Verify studio_pipeline.build_task writes preserve_bust_morph into config.json
+            task_dir = Path(tmp) / 'task_cfg'
+            task_dir.mkdir()
+            fake_info = {
+                'task_dir': str(task_dir),
+                'name': 'Test',
+                'romanized_name': 'Test Model',
+                'character_id': 1,
+                'head_id': 1,
+                'record': {'id': 1, 'heightScale': 1.0, 'headShape': 0.95, 'shape': 0.696},
+                'parts': [],
+                'warnings': [],
+                'resource_version': '',
+            }
+            captured_cfg = {}
+
+            def fake_run(cmd, **kwargs):
+                cfg_path = task_dir.parent / 'out_cfg'
+                for a in cmd:
+                    if str(a).endswith('config.json'):
+                        captured_cfg['data'] = json.loads(Path(a).read_text(encoding='utf-8'))
+                raise RuntimeError('stop after config check')
+
+            with mock.patch.object(studio_pipeline, 'inspect_task', return_value=fake_info), \
+                 mock.patch.object(studio_pipeline, 'validate_blender_executable', return_value=Path(sys.executable)), \
+                 mock.patch.object(studio_pipeline.subprocess, 'run', side_effect=fake_run):
+                with self.assertRaises(RuntimeError):
+                    studio_pipeline.build_task(task_dir, Path(tmp) / 'out_cfg', preserve_bust_morph=True)
+            self.assertTrue(captured_cfg['data']['preserve_bust_morph'])
+
 
 if __name__=='__main__':unittest.main()
 

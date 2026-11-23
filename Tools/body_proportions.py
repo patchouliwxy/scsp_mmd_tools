@@ -372,9 +372,10 @@ def restore(root, armature, meshes):
             "state": _state(root, rig, baseline)}
 
 
-def bake_bust(root, armature, meshes):
+def bake_bust(root, armature, meshes, preserve_bust_morph=False):
     """Bake active bust shape keys into rest coordinates and custom corner normals."""
     _assert_unbaked(root)
+    preserve_bust_morph = bool(preserve_bust_morph)
     mesh_objects = _objects(meshes, "meshes")
     baseline, rig = _load(root, armature, mesh_objects)
 
@@ -391,6 +392,15 @@ def bake_bust(root, armature, meshes):
         bust_keys = [keys.key_blocks[b["index"]] for b in mesh_bindings]
         applied_values = [float(key.value) for key in bust_keys]
 
+        vertex_floats = len(obj.data.vertices) * 3
+        orig_targets = []
+        if preserve_bust_morph:
+            if len(bust_keys) != 1:
+                raise BindingError("Preserving bust_up requires single bust key on " + obj.name)
+            buf = [0.0] * vertex_floats
+            bust_keys[0].data.foreach_get("co", buf)
+            orig_targets.append(buf)
+
         baked_co, delta_co, baked_normals, has_custom_normals, max_disp = (
             _evaluate_bust_geometry(obj, bust_keys)
         )
@@ -400,7 +410,6 @@ def bake_bust(root, armature, meshes):
         obj.data.vertices.foreach_set("co", baked_co)
 
         bust_set = set(bust_keys)
-        vertex_floats = len(obj.data.vertices) * 3
         other_buf = [0.0] * vertex_floats
         for key in keys.key_blocks[1:]:
             if key in bust_set:
@@ -408,13 +417,24 @@ def bake_bust(root, armature, meshes):
             key.data.foreach_get("co", other_buf)
             key.data.foreach_set("co", [c + d for c, d in zip(other_buf, delta_co)])
 
-        for key in bust_keys:
-            obj.shape_key_remove(key)
+        if preserve_bust_morph:
+            bust_key = bust_keys[0]
+            bust_key.name = "bust_up"
+            bust_key.data.foreach_set("co", orig_targets[0])
+            bust_key.value = 0.0
+            bust_key.slider_min = 0.0
+            bust_key.slider_max = 1.0
+            bust_key.mute = False
+            bust_key.interpolation = "KEY_LINEAR"
+            removed_empty_basis = False
+        else:
+            for key in bust_keys:
+                obj.shape_key_remove(key)
 
-        removed_empty_basis = False
-        if obj.data.shape_keys and len(obj.data.shape_keys.key_blocks) == 1:
-            obj.shape_key_remove(obj.data.shape_keys.key_blocks[0])
-            removed_empty_basis = True
+            removed_empty_basis = False
+            if obj.data.shape_keys and len(obj.data.shape_keys.key_blocks) == 1:
+                obj.shape_key_remove(obj.data.shape_keys.key_blocks[0])
+                removed_empty_basis = True
 
         obj.data.update()
         if has_custom_normals and baked_normals is not None:
@@ -435,6 +455,8 @@ def bake_bust(root, armature, meshes):
                 "max_vertex_displacement_m": max_disp,
                 "custom_normals_updated": has_custom_normals,
                 "removed_empty_basis": removed_empty_basis,
+                "preserved_morph": preserve_bust_morph,
+                "preserved_morph_name": "bust_up" if preserve_bust_morph else None,
                 "remaining_shape_keys": remaining_keys,
             })
 
@@ -445,6 +467,7 @@ def bake_bust(root, armature, meshes):
         "status": "baked" if baked_records else "skipped_no_bust_keys",
         "schema": SCHEMA,
         "provenance": baseline["provenance"],
+        "preserve_bust_morph": preserve_bust_morph,
         "baked_count": len(baked_records),
         "baked_bindings": baked_records,
     }

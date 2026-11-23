@@ -1,8 +1,8 @@
-# scsp_mmd_tools (v0.2.0 Preview)
+# scsp_mmd_tools (v0.2.2 Preview)
 
 [简体中文](README.md) | **English**
 
-Current release: **v0.2.0 Preview** — A unified desktop GUI and CLI pipeline combining **SCSP Character PMX Modeling** and **Song Motion / Camera VMD Conversion**:
+Current release: **v0.2.2 Preview** — A unified desktop GUI and CLI pipeline combining **SCSP Character PMX Modeling** and **Song Motion / Camera VMD Conversion**:
 - **Character PMX tab**: converts SCSP character assets into clean, physics-free MMD models (`.pmx` + `textures/`) in background Blender processes, **without requiring Unity, PmxEditor, or third-party Blender add-ons**.
 - **Motion VMD tab**: converts song download folders into standard 30 FPS MMD body, expression, lip-sync, gaze, and camera `.vmd` files via a built-in pure-Python `BuiltinPoseBackend` Humanoid solver, **without requiring an external Unity / PoseWorker runtime**.
 
@@ -30,7 +30,7 @@ Folders do **not** strictly have to come from the downloader (`job.json` and `ma
 Launch `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` (or run `python studio_gui.py` from source) and use the top tab switcher to move between **角色 PMX** (Character PMX) and **动作 VMD** (Motion VMD), each keeping independent state while persisting settings to `studio_settings.json`:
 
 ### Character PMX Tab
-1. Select the Blender executable and output root directory (top status badges live-check the detected Blender version plus built-in `ufbx FBX` and `PMX IO` readiness).
+1. Select the Blender executable and output root directory (top status badges live-check the detected Blender version plus built-in `ufbx FBX` and `PMX IO` readiness; the header also offers an optional **`保留 bust_up 形态键`** toggle—off by default—to preserve a unified `bust_up` morph from the character's baked size up to game max `1.0`).
 2. Add one or more task folders to the queue:
    - **Single Build / Batch Build**: processes either the active item or the whole queue sequentially (continuing past individual failures); **Stop After Current** finishes the running model cleanly before stopping.
    - **Per-Task Overrides**: configure optional custom model names and multi-line **PMX comments** (blank by default — when blank, no forced template text is injected; supports `{name}`, `{romanized}`, `{id}`, and `{character_id}` placeholders, plus **Apply to Selected / Apply to All / Save as Default** persisted to `studio_settings.json`).
@@ -49,11 +49,7 @@ Pipeline flow: `ufbx` FBX import & material/makeup prep → eye socket geometry 
 - **Accessory Makeup & Helper Cleanup**: automatically transfers `M_face` makeup textures carried by accessory meshes onto the main head face material before hiding duplicate overlay cards, shadow proxies (`*_shadow`), `closeface`, placeholders, colliders, and `RoomShoes` (`Shoes` are kept).
 - **Eyes & Eye Effects**: statically composites eye highlights while keeping source alpha (game dynamic UV shifts/jitter are intentionally not reproduced); rebuilds irises into alpha-trimmed concentric polar concave bowls (`32` radial segments × `4` rings), generates 1× egg-cup eye sockets via `eye_hole_{L,R}` loop mapping (with automatic `preserve_source` fallback + warnings only on malformed rims), and aligns eye bone pivots to spherical centers.
 - **Facial Morphs (62 keys)**: strips broken/empty source keys (`口開け`, `左追加睫毛`, `右追加睫毛`, `tongue_up`), generates geometric eye expressions (`じと目`/`瞳小`/`瞳縦潰れ`/`びっくり`/`わぉ?!`/`なごみ`/`恐ろしい子！`), hidden in-head overlay effect cards (`星目`/`はぁと`/`はちゅ目`/`はぅ` with flat eyelid sealing), eyebrow keys (`個性`/`にこり`/`怒り`), and symmetric/full MMD mouth shapes (`ワ`/`にっこり`/`にやり`/`ω`/`ω□`/`▲`/`∧`/`□`/`ん`/`口角上げ`/`口角下げ`/`口横広げ`).
-- **Body Proportions & Optional Physics**: scales height/head/`bust_up` from character metadata alongside explicit `arm=0.95` and `hand=0.9` factors (`bust_up` is baked into rest geometry and custom corner normals). The main pipeline outputs a clean **physics-free** PMX; if you need MMD native rigid bodies & joints, run the standalone script:
-  ```powershell
-  python Tools/pe_physics.py --input <model.pmx> --output <model_physics.pmx>
-  ```
-  (also supports batch mode with `--input-dir` / `--output-dir`).
+- **Body Proportions & Physics Status**: scales height/head/`bust_up` from character metadata alongside explicit `arm=0.95` and `hand=0.9` factors (`bust_up` is baked into rest geometry and custom corner normals). The main pipeline outputs a clean **physics-free** PMX. Experimental MMD native physics (`Tools/pe_physics.py`) currently does not meet quality expectations in MMD and is **marked as TODO / paused** (not recommended for production use).
 
 ## Running & Building from Source
 
@@ -69,6 +65,7 @@ Launching the GUI and running the **Character PMX** tab or `Tools/test_studio_pi
 # CLI: Character PMX
 python studio_pipeline.py inspect <task_folder>
 python studio_pipeline.py build <task_folder> --output <output_root> --blender <blender_exe>
+python studio_pipeline.py build <task_folder> --output <output_root> --preserve-bust-morph
 python studio_pipeline.py batch <task1> <task2> --output <output_root>
 
 # CLI: Motion / Camera VMD (uses built-in pure-Python Humanoid solver by default)
@@ -91,6 +88,15 @@ powershell -ExecutionPolicy Bypass -File build_studio.ps1 -Python <python_exe> -
 Output is written to `Releases/scsp_mmd_tools/scsp_mmd_tools.exe` (preserving existing `Outputs/`). Prebuilt `Tools/ufbx_bridge.dll` is included in the repository; to recompile it from C source with MinGW `gcc`, run `Tools/native/build_ufbx.ps1`.
 
 ## Changelog
+
+### v0.2.2 Preview (2026-11-23)
+
+- **Optional `bust_up` Morph Preservation**: added a global GUI toggle (`保留 bust_up 形态键`, off by default, persisted to `studio_settings.json`) and CLI flag `--preserve-bust-morph` that keeps a unified `bust_up` slider (`0.0` default = character's baked bust size, `0 ~ 1` adjustable up to game max `1.0`).
+- **Physics Status Note**: explicitly marked experimental `Tools/pe_physics.py` as TODO / paused in documentation.
+
+### v0.2.1 Preview (2026-11-19)
+
+- **Approximate Gaze Aiming & Helper Cleanup**: added head-relative approximate gaze aiming (`ChangeTarget` camera / hands / cross-character targets, `5.5°/3.0°/3.5°` clamp & `tanh` smoothing) with a Motion VMD tab toggle, plus automatic hiding of `MaterialHolder` placeholder cards and eyebrow card transfer.
 
 ### v0.2.0 Preview (2026-11-18)
 

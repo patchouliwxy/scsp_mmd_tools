@@ -54,7 +54,7 @@ def run():
     report['modules']['body_proportions']=initialize(root,rig,meshes,config['parameters'],config['provenance'])
     bpy.ops.wm.save_as_mainfile(filepath=str(out/'03-proportions.blend'))
     report['pipeline_steps'].append('body_proportions')
-    report['modules']['body_proportions_bust_bake']=bake_bust(root,rig,meshes)
+    report['modules']['body_proportions_bust_bake']=bake_bust(root,rig,meshes,preserve_bust_morph=bool(config.get('preserve_bust_morph',False)))
     report['pipeline_steps'].append('body_proportions_bust_bake')
     report['modules']['skeleton_processing']['finalize']=finalize_skeleton(rig,meshes)
     report['pipeline_steps'].extend(['skeleton_bake_apose','mmd_bone_names','prune_unused_bones'])
